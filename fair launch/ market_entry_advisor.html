@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Entry Advisor</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #f4f7f9;
+            color: #333;
+        }
+        .container {
+            background: #fff;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .input-group input, .input-group select {
+            width: 95%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #3498db;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .results-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e8f4f8;
+            border-left: 5px solid #3498db;
+            border-radius: 5px;
+        }
+        .results-section h2 {
+            margin-top: 0;
+        }
+        .results-section p {
+            font-size: 16px;
+        }
+        .highlight-green {
+            font-weight: 700;
+            color: #2ecc71;
+        }
+        .highlight-red {
+            font-weight: 700;
+            color: #e74c3c;
+        }
+        .decision-box {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: 700;
+            text-align: center;
+        }
+        .decision-box.go {
+            background-color: #eaf6ff;
+            border: 2px solid #2ecc71;
+        }
+        .decision-box.caution {
+            background-color: #fff8e1;
+            border: 2px solid #f39c12;
+        }
+        .decision-box.stop {
+            background-color: #fcebeb;
+            border: 2px solid #e74c3c;
+        }
+        .reason-box {
+            margin-top: 20px;
+            text-align: left;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Market Entry Advisor</h1>
+        <p>This tool helps you decide whether to enter the market by analyzing potential profit, success thresholds, and risks.</p>
+
+        <h2>Baseline Scenario Data</h2>
+        <div class="input-group">
+            <label for="baseProjects">Number of Projects</label>
+            <input type="number" id="baseProjects" value="15" min="0">
+        </div>
+        <div class="input-group">
+            <label for="baseUsers">Number of Users per Project</label>
+            <input type="number" id="baseUsers" value="300" min="0">
+        </div>
+        <div class="input-group">
+            <label for="baseFundsRaised">Funds Raised per Project (USDT)</label>
+            <input type="number" id="baseFundsRaised" value="20000" min="0">
+        </div>
+        <div class="input-group">
+            <label for="baseFeePct">Platform Fee (%)</label>
+            <input type="number" id="baseFeePct" value="3" min="0" max="100">
+        </div>
+        <div class="input-group">
+            <label for="baseServiceFee">Service Fee (per purchase, USD)</label>
+            <input type="number" id="baseServiceFee" value="0.5" min="0" step="0.1">
+        </div>
+        <div class="input-group">
+            <label for="baseCost">Total Annual Cost (USD)</label>
+            <input type="number" id="baseCost" value="10000" min="0">
+        </div>
+
+        <hr>
+
+        <h2>Decision Factors</h2>
+        <div class="input-group">
+            <label for="breakEvenProjects">Break-even Point (Number of Projects)</label>
+            <input type="number" id="breakEvenProjects" value="10" min="1">
+            <small>At what number of projects will your business break even?</small>
+        </div>
+        <div class="input-group">
+            <label for="optimisticGrowth">Optimistic Growth (%)</label>
+            <input type="number" id="optimisticGrowth" value="50" min="1">
+            <small>How much growth do you expect in the first year in your best-case scenario?</small>
+        </div>
+        <div class="input-group">
+            <label for="riskTolerance">Risk Tolerance Level</label>
+            <select id="riskTolerance">
+                <option value="low">Low (Avoids all risk)</option>
+                <option value="medium">Medium (Accepts some risk)</option>
+                <option value="high">High (Aggressively pursues growth)</option>
+            </select>
+        </div>
+        
+        <button class="btn" onclick="runDecision()">Get Market Entry Advice</button>
+
+        <div id="decisionResult" class="results-section" style="display: none;">
+            <h2>Your Market Entry Decision:</h2>
+            <div id="decisionBox" class="decision-box"></div>
+            <div id="reasonBox" class="reason-box"></div>
+        </div>
+    </div>
+
+    <script>
+        function runDecision() {
+            // Get baseline data
+            const baseProjects = parseFloat(document.getElementById('baseProjects').value);
+            const baseUsers = parseFloat(document.getElementById('baseUsers').value);
+            const baseFundsRaised = parseFloat(document.getElementById('baseFundsRaised').value);
+            const baseFeePct = parseFloat(document.getElementById('baseFeePct').value);
+            const baseServiceFee = parseFloat(document.getElementById('baseServiceFee').value);
+            const baseCost = parseFloat(document.getElementById('baseCost').value);
+
+            // Get decision factors
+            const breakEvenProjects = parseFloat(document.getElementById('breakEvenProjects').value);
+            const optimisticGrowth = parseFloat(document.getElementById('optimisticGrowth').value);
+            const riskTolerance = document.getElementById('riskTolerance').value;
+
+            // Calculate current profit and optimistic profit
+            const baseAvgContribution = baseFundsRaised / baseUsers;
+            const baseRevenue = (baseProjects * baseFundsRaised * (baseFeePct / 100)) + (baseProjects * baseUsers * baseServiceFee);
+            const baseProfit = baseRevenue - baseCost;
+
+            const optimisticProjects = baseProjects * (1 + optimisticGrowth / 100);
+            const optimisticUsers = baseUsers * (1 + optimisticGrowth / 100);
+            const optimisticFundsRaised = optimisticUsers * (baseFundsRaised / baseUsers);
+            const optimisticRevenue = (optimisticProjects * optimisticFundsRaised * (baseFeePct / 100)) + (optimisticProjects * optimisticUsers * baseServiceFee);
+            const optimisticProfit = optimisticRevenue - baseCost;
+
+            // Determine the decision
+            let decision = '';
+            let reasons = [];
+
+            // Condition 1: Check if the business is profitable in the baseline scenario
+            if (baseProfit > 0) {
+                reasons.push("✅ **Baseline Profitability:** The business is already profitable with your current assumptions. This is a strong indicator of a viable market.");
+            } else {
+                reasons.push("⚠️ **Baseline Loss:** The business is not profitable under your current assumptions. Entering the market without a clear path to profitability is highly risky.");
+            }
+
+            // Condition 2: Check if the break-even point is achievable
+            if (breakEvenProjects > baseProjects) {
+                 reasons.push(`⚠️ **Break-even Threshold:** Your break-even point is at ${breakEvenProjects} projects, which is higher than your current ${baseProjects} projects. This means you have to grow to be profitable.`);
+            } else {
+                reasons.push(`✅ **Low Threshold:** Your break-even point is at ${breakEvenProjects} projects, which is lower than or equal to your current ${baseProjects} projects. Profitability is already within reach.`);
+            }
+
+            // Condition 3: Check optimistic scenario
+            if (optimisticProfit > 0) {
+                reasons.push(`✅ **Optimistic Profitability:** In an optimistic scenario with ${optimisticGrowth}% growth, your annual profit could reach $${optimisticProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}. This represents a significant market opportunity.`);
+            } else {
+                reasons.push(`❌ **Optimistic Loss:** Even in an optimistic scenario with ${optimisticGrowth}% growth, the business would still face losses. The fundamental business model may need rethinking.`);
+            }
+
+            // Final decision logic based on risk tolerance and conditions
+            if (riskTolerance === 'high') {
+                if (optimisticProfit > 0) {
+                    decision = 'GO';
+                } else {
+                    decision = 'STOP';
+                }
+            } else if (riskTolerance === 'medium') {
+                if (baseProfit > 0 && breakEvenProjects <= baseProjects) {
+                    decision = 'GO';
+                } else if (optimisticProfit > 0 && breakEvenProjects > baseProjects) {
+                    decision = 'CAUTION';
+                    reasons.push("➡️ **Medium Risk:** Proceed with caution. While there's potential, you need to hit your growth targets to become profitable.");
+                } else {
+                    decision = 'STOP';
+                }
+            } else if (riskTolerance === 'low') {
+                 if (baseProfit > 0 && breakEvenProjects <= baseProjects) {
+                    decision = 'GO';
+                    reasons.push("➡️ **Low Risk:** This scenario is highly favorable and aligns with a low-risk tolerance. The path to profitability is clear and achievable.");
+                } else {
+                    decision = 'STOP';
+                    reasons.push("➡️ **Low Risk:** The potential for initial losses is high, which does not align with a low-risk tolerance strategy.");
+                }
+            }
+
+            // Display results
+            const decisionBox = document.getElementById('decisionBox');
+            const reasonBox = document.getElementById('reasonBox');
+            
+            decisionBox.innerHTML = `Decision: ${decision}`;
+            decisionBox.className = `decision-box ${decision.toLowerCase()}`;
+            
+            reasonBox.innerHTML = '<h4>Reasoning:</h4><ul>' + reasons.map(r => `<li>${r}</li>`).join('') + '</ul>';
+            
+            document.getElementById('decisionResult').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

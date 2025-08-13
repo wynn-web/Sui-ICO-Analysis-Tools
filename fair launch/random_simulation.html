@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customized Randomized Sensitivity Simulation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #f4f7f9;
+            color: #333;
+        }
+        .container {
+            background: #fff;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .input-group input {
+            width: 90%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            font-size: 18px;
+            color: #fff;
+            background-color: #3498db;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .results-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e8f4f8;
+            border-left: 5px solid #3498db;
+            border-radius: 5px;
+        }
+        .results-section h2 {
+            margin-top: 0;
+        }
+        .results-section p {
+            font-size: 16px;
+        }
+        .highlight {
+            font-weight: 700;
+            color: #2ecc71;
+        }
+        .warning {
+            font-weight: 700;
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Customized Randomized Sensitivity Simulation</h1>
+        <p>Set the min and max ranges for your variables and run a simulation to determine which variable is more impactful on profitability.</p>
+
+        <h2>Simulation Parameters</h2>
+        <div class="input-grid">
+            <div>
+                <h3>Number of Projects</h3>
+                <div class="input-group">
+                    <label for="projectsMin">Min:</label>
+                    <input type="number" id="projectsMin" value="5">
+                </div>
+                <div class="input-group">
+                    <label for="projectsMax">Max:</label>
+                    <input type="number" id="projectsMax" value="20">
+                </div>
+            </div>
+            <div>
+                <h3>Users per Project</h3>
+                <div class="input-group">
+                    <label for="usersMin">Min:</label>
+                    <input type="number" id="usersMin" value="50">
+                </div>
+                <div class="input-group">
+                    <label for="usersMax">Max:</label>
+                    <input type="number" id="usersMax" value="900">
+                </div>
+            </div>
+            <div>
+                <h3>Funds Raised per Project</h3>
+                <div class="input-group">
+                    <label for="fundsRaisedMin">Min:</label>
+                    <input type="number" id="fundsRaisedMin" value="500">
+                </div>
+                <div class="input-group">
+                    <label for="fundsRaisedMax">Max:</label>
+                    <input type="number" id="fundsRaisedMax" value="500000">
+                </div>
+            </div>
+            <div>
+                <h3>Platform Fee (%)</h3>
+                <div class="input-group">
+                    <label for="platformFeeMin">Min:</label>
+                    <input type="number" id="platformFeeMin" value="1">
+                </div>
+                <div class="input-group">
+                    <label for="platformFeeMax">Max:</label>
+                    <input type="number" id="platformFeeMax" value="10">
+                </div>
+            </div>
+            <div>
+                <h3>Service Fee (USD)</h3>
+                <div class="input-group">
+                    <label for="serviceFeeMin">Min:</label>
+                    <input type="number" id="serviceFeeMin" value="0.1" step="0.1">
+                </div>
+                <div class="input-group">
+                    <label for="serviceFeeMax">Max:</label>
+                    <input type="number" id="serviceFeeMax" value="5" step="0.1">
+                </div>
+            </div>
+            <div>
+                <h3>Simulation Settings</h3>
+                <div class="input-group">
+                    <label for="numSimulations">Number of Simulations:</label>
+                    <input type="number" id="numSimulations" value="100000">
+                </div>
+            </div>
+        </div>
+
+        <button class="btn" onclick="runSimulation()">Run Simulation</button>
+
+        <div id="results" class="results-section" style="display: none;">
+            <h2>Simulation Results</h2>
+            <p id="totalSimulations"></p>
+            <p><strong>Number of Projects & Users</strong> was the more profitable strategy in: <span id="projectsCount" class="highlight">0</span> scenarios.</p>
+            <p><strong>Avg. Contribution per User</strong> was the more profitable strategy in: <span id="avgContributionCount" class="highlight">0</span> scenarios.</p>
+            <p>They were of equal importance in: <span id="equalCount">0</span> scenarios.</p>
+            <h3 id="finalConclusion"></h3>
+        </div>
+    </div>
+
+    <script>
+        function runSimulation() {
+            // Get user-defined ranges
+            const numSimulations = parseInt(document.getElementById('numSimulations').value);
+            const projectsMin = parseFloat(document.getElementById('projectsMin').value);
+            const projectsMax = parseFloat(document.getElementById('projectsMax').value);
+            const usersMin = parseFloat(document.getElementById('usersMin').value);
+            const usersMax = parseFloat(document.getElementById('usersMax').value);
+            const fundsRaisedMin = parseFloat(document.getElementById('fundsRaisedMin').value);
+            const fundsRaisedMax = parseFloat(document.getElementById('fundsRaisedMax').value);
+            const platformFeeMin = parseFloat(document.getElementById('platformFeeMin').value);
+            const platformFeeMax = parseFloat(document.getElementById('platformFeeMax').value);
+            const serviceFeeMin = parseFloat(document.getElementById('serviceFeeMin').value);
+            const serviceFeeMax = parseFloat(document.getElementById('serviceFeeMax').value);
+
+            let projectsWinCount = 0;
+            let avgContributionWinCount = 0;
+            let equalCount = 0;
+
+            const resultsElement = document.getElementById('results');
+            const totalSimulationsElement = document.getElementById('totalSimulations');
+            const projectsCountElement = document.getElementById('projectsCount');
+            const avgContributionCountElement = document.getElementById('avgContributionCount');
+            const equalCountElement = document.getElementById('equalCount');
+            const finalConclusionElement = document.getElementById('finalConclusion');
+
+            resultsElement.style.display = 'block';
+            totalSimulationsElement.textContent = `Running ${numSimulations.toLocaleString()} simulations...`;
+
+            for (let i = 0; i < numSimulations; i++) {
+                // Generate random data within the specified ranges
+                const projects = getRandom(projectsMin, projectsMax);
+                const users = getRandom(usersMin, usersMax);
+                const fundsRaised = getRandom(fundsRaisedMin, fundsRaisedMax);
+                const platformFeePct = getRandom(platformFeeMin, platformFeeMax);
+                const serviceFee = getRandom(serviceFeeMin, serviceFeeMax);
+
+                const avgContribution = fundsRaised / users;
+
+                const projectRevenueMultiplier = (users * avgContribution * (platformFeePct / 100)) + (users * serviceFee);
+                const contributionRevenueMultiplier = (users * projects * (platformFeePct / 100));
+
+                if (projectRevenueMultiplier > contributionRevenueMultiplier) {
+                    projectsWinCount++;
+                } else if (contributionRevenueMultiplier > projectRevenueMultiplier) {
+                    avgContributionWinCount++;
+                } else {
+                    equalCount++;
+                }
+            }
+
+            totalSimulationsElement.textContent = `Completed ${numSimulations.toLocaleString()} simulations.`;
+            projectsCountElement.textContent = projectsWinCount.toLocaleString();
+            avgContributionCountElement.textContent = avgContributionWinCount.toLocaleString();
+            equalCountElement.textContent = equalCount.toLocaleString();
+
+            if (projectsWinCount > avgContributionWinCount) {
+                finalConclusionElement.textContent = "Conclusion: Based on a wide range of scenarios, focusing on the Number of Projects & Users is generally the more profitable strategy.";
+                finalConclusionElement.classList.remove('warning');
+                finalConclusionElement.classList.add('highlight');
+            } else if (avgContributionWinCount > projectsWinCount) {
+                finalConclusionElement.textContent = "Conclusion: Based on a wide range of scenarios, focusing on Avg. Contribution per User is generally the more profitable strategy.";
+                finalConclusionElement.classList.remove('warning');
+                finalConclusionElement.classList.add('highlight');
+            } else {
+                finalConclusionElement.textContent = "Conclusion: Both strategies are of equal importance across a wide range of scenarios.";
+                finalConclusionElement.classList.remove('warning');
+                finalConclusionElement.classList.add('highlight');
+            }
+        }
+
+        function getRandom(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+    </script>
+</body>
+</html>

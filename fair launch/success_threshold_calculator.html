@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Success Threshold Calculator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #f4f7f9;
+            color: #333;
+        }
+        .container {
+            background: #fff;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .input-group input, .input-group select {
+            width: 95%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #3498db;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .results-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #e8f4f8;
+            border-left: 5px solid #3498db;
+            border-radius: 5px;
+        }
+        .results-section h2 {
+            margin-top: 0;
+        }
+        .results-section p {
+            font-size: 16px;
+        }
+        .highlight {
+            font-weight: 700;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Success Threshold Calculator</h1>
+        <p>Input your target profit and baseline data to find the business metrics needed for success.</p>
+
+        <h2>Target and Baseline Data</h2>
+        <div class="input-group">
+            <label for="targetProfit">Target Annual Net Profit (USD)</label>
+            <input type="number" id="targetProfit" value="20000" min="0">
+        </div>
+        <div class="input-group">
+            <label for="baseProjects">Number of Projects (Baseline)</label>
+            <input type="number" id="baseProjects" value="15" min="0">
+        </div>
+        <div class="input-group">
+            <label for="baseUsers">Number of Users per Project (Baseline)</label>
+            <input type="number" id="baseUsers" value="300" min="0">
+        </div>
+        <div class="input-group">
+            <label for="baseFundsRaised">Funds Raised per Project (Baseline) (USDT)</label>
+            <input type="number" id="baseFundsRaised" value="20000" min="0">
+        </div>
+        <div class="input-group">
+            <label for="baseFeePct">Platform Fee (%)</label>
+            <input type="number" id="baseFeePct" value="3" min="0" max="100">
+        </div>
+        <div class="input-group">
+            <label for="baseServiceFee">Service Fee (per purchase, USD)</label>
+            <input type="number" id="baseServiceFee" value="0.5" min="0" step="0.1">
+        </div>
+        <div class="input-group">
+            <label for="baseCost">Total Annual Cost (USD)</label>
+            <input type="number" id="baseCost" value="10000" min="0">
+        </div>
+
+        <button class="btn" onclick="calculateThreshold()">Calculate Thresholds</button>
+
+        <div id="results" class="results-section" style="display: none;">
+            <h2>Calculated Thresholds</h2>
+            <p id="projectsThreshold"></p>
+            <p id="usersThreshold"></p>
+            <p id="fundsRaisedThreshold"></p>
+        </div>
+    </div>
+
+    <script>
+        function calculateThreshold() {
+            // Get user inputs
+            const targetProfit = parseFloat(document.getElementById('targetProfit').value);
+            const baseProjects = parseFloat(document.getElementById('baseProjects').value);
+            const baseUsers = parseFloat(document.getElementById('baseUsers').value);
+            const baseFundsRaised = parseFloat(document.getElementById('baseFundsRaised').value);
+            const baseFeePct = parseFloat(document.getElementById('baseFeePct').value);
+            const baseServiceFee = parseFloat(document.getElementById('baseServiceFee').value);
+            const baseCost = parseFloat(document.getElementById('baseCost').value);
+
+            // Calculate Avg. Contribution per User for baseline
+            const baseAvgContribution = baseFundsRaised / baseUsers;
+
+            // Calculate the total revenue required to hit the target profit
+            const targetRevenue = targetProfit + baseCost;
+
+            // --- Scenario 1: Calculate Projects Threshold ---
+            // Formula: Projects = (Target Revenue) / [(Funds Raised * Platform Fee%) + (Users * Service Fee)]
+            const projectRevenuePerProject = (baseFundsRaised * (baseFeePct / 100)) + (baseUsers * baseServiceFee);
+            const projectsNeeded = targetRevenue / projectRevenuePerProject;
+
+            // --- Scenario 2: Calculate Users Threshold ---
+            // Formula: Users = (Target Revenue) / [(Projects * Avg. Contribution * Platform Fee%) + (Projects * Service Fee)]
+            const userRevenuePerUser = (baseProjects * baseAvgContribution * (baseFeePct / 100)) + (baseProjects * baseServiceFee);
+            const usersNeeded = targetRevenue / userRevenuePerUser;
+
+            // --- Scenario 3: Calculate Funds Raised Threshold ---
+            // Formula: Funds Raised = (Target Revenue - (Projects * Users * Service Fee)) / (Projects * Platform Fee%)
+            const fundsRaisedNeeded = (targetRevenue - (baseProjects * baseUsers * baseServiceFee)) / (baseProjects * (baseFeePct / 100));
+
+            // Display results
+            document.getElementById('projectsThreshold').innerHTML = `To achieve a **$${targetProfit.toLocaleString()}** annual net profit, you would need <span class="highlight">${Math.ceil(projectsNeeded)}</span> projects, assuming all other metrics remain constant.`;
+            document.getElementById('usersThreshold').innerHTML = `To achieve a **$${targetProfit.toLocaleString()}** annual net profit, you would need <span class="highlight">${Math.ceil(usersNeeded)}</span> users per project, assuming all other metrics remain constant.`;
+            document.getElementById('fundsRaisedThreshold').innerHTML = `To achieve a **$${targetProfit.toLocaleString()}** annual net profit, you would need a **Funds Raised per Project** of <span class="highlight">$${fundsRaisedNeeded.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>, assuming all other metrics remain constant.`;
+            document.getElementById('results').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
