@@ -97,12 +97,29 @@
 
         <h2>Baseline Scenario Data</h2>
         <div class="input-group">
-            <label for="baseProjects">Number of Projects</label>
-            <input type="number" id="baseProjects" value="15" min="0">
+            <label for="baseProjects">Baseline Projects</label>
+            <input type="number" id="baseProjects" value="10" min="0">
+        </div>
+        <div class="input-group">
+            <label for="bdCount">Number of BDs</label>
+            <input type="number" id="bdCount" value="2" min="0">
+        </div>
+        <div class="input-group">
+            <label for="bdKpi">BD Monthly Project KPI</label>
+            <input type="number" id="bdKpi" value="3" min="1">
+            <small>Number of projects each BD must bring in per month.</small>
         </div>
         <div class="input-group">
             <label for="baseUsers">Number of Users per Project</label>
             <input type="number" id="baseUsers" value="300" min="0">
+        </div>
+        <div class="input-group">
+            <label for="purchasesPerUser">Purchases per User</label>
+            <input type="number" id="purchasesPerUser" value="2" min="1">
+        </div>
+        <div class="input-group">
+            <label for="claimsPerUser">Claims per User</label>
+            <input type="number" id="claimsPerUser" value="5" min="1">
         </div>
         <div class="input-group">
             <label for="baseFundsRaised">Funds Raised per Project (USDT)</label>
@@ -113,17 +130,16 @@
             <input type="number" id="baseFeePct" value="3" min="0" max="100">
         </div>
         <div class="input-group">
-            <label for="claimFeePct">Claim Fee (%)</label>
-            <input type="number" id="claimFeePct" value="0.5" min="0" step="0.1" max="100">
+            <label for="purchaseFeeUSD">Purchase Fee (USD)</label>
+            <input type="number" id="purchaseFeeUSD" value="0.6" min="0" step="0.1">
+        </div>
+        <div class="input-group">
+            <label for="claimFeeUSD">Claim Fee (USD)</label>
+            <input type="number" id="claimFeeUSD" value="0.6" min="0" step="0.1">
         </div>
         <div class="input-group">
             <label for="fixedCost">Fixed Cost (R&D, etc.) (USD)</label>
             <input type="number" id="fixedCost" value="10000" min="0">
-        </div>
-        <div class="input-group">
-            <label for="bdKpi">BD Monthly Project KPI</label>
-            <input type="number" id="bdKpi" value="3" min="1">
-            <small>Number of projects each BD must bring in per month.</small>
         </div>
 
         <hr>
@@ -145,38 +161,48 @@
         <hr>
 
         <div id="tippingPointAnalysis" class="results-section" style="display: none;">
-            <h2>Tipping Point Analysis: Projects vs. Avg. Contribution</h2>
-            <p>This analysis shows under what conditions focusing on either **Number of Projects** or **Avg. Contribution per User** becomes the more profitable strategy.</p>
+            <h2>Tipping Point Analysis</h2>
+            <p>This analysis compares the profitability of increasing **Total Projects**, **Users per Project**, and **Avg. Contribution per User**.</p>
             <p id="tippingPointResult"></p>
         </div>
     </div>
 
     <script>
         function runAnalysis() {
+            const BASE_BD_SALARY_YEARLY = 2000 * 12;
+
             // Get baseline data
             const baseProjects = parseFloat(document.getElementById('baseProjects').value);
+            const bdCount = parseFloat(document.getElementById('bdCount').value);
+            const bdKpi = parseFloat(document.getElementById('bdKpi').value);
             const baseUsers = parseFloat(document.getElementById('baseUsers').value);
+            const purchasesPerUser = parseFloat(document.getElementById('purchasesPerUser').value);
+            const claimsPerUser = parseFloat(document.getElementById('claimsPerUser').value);
             const baseFundsRaised = parseFloat(document.getElementById('baseFundsRaised').value);
             const baseFeePct = parseFloat(document.getElementById('baseFeePct').value);
-            const claimFeePct = parseFloat(document.getElementById('claimFeePct').value);
+            const purchaseFeeUSD = parseFloat(document.getElementById('purchaseFeeUSD').value);
+            const claimFeeUSD = parseFloat(document.getElementById('claimFeeUSD').value);
             const fixedCost = parseFloat(document.getElementById('fixedCost').value);
-            const bdKpi = parseFloat(document.getElementById('bdKpi').value);
             const changePct = parseFloat(document.getElementById('changePct').value);
             const changeFactor = 1 + (changePct / 100);
 
+            const baseTotalProjects = baseProjects + (bdCount * bdKpi * 12);
             const baseAvgContribution = baseFundsRaised / baseUsers;
 
-            function calculateProfit(projects, users, fundsRaised) {
-                const totalRevenue = (projects * fundsRaised * (baseFeePct / 100)) + (projects * fundsRaised * (claimFeePct / 100));
-                const bdCount = Math.ceil(projects / (bdKpi * 12));
-                const totalCost = fixedCost + (bdCount * 2000 * 12);
+            function calculateProfit(totalProjects, users, fundsRaised) {
+                const platformRevenue = (totalProjects * fundsRaised * (baseFeePct / 100));
+                const purchaseFeeRevenue = (totalProjects * users * purchasesPerUser * purchaseFeeUSD);
+                const claimFeeRevenue = (totalProjects * users * claimsPerUser * claimFeeUSD);
+                const totalRevenue = platformRevenue + purchaseFeeRevenue + claimFeeRevenue;
+                const totalCost = fixedCost + (bdCount * BASE_BD_SALARY_YEARLY);
                 return totalRevenue - totalCost;
             }
 
-            const baseProfit = calculateProfit(baseProjects, baseUsers, baseFundsRaised);
+            const baseProfit = calculateProfit(baseTotalProjects, baseUsers, baseFundsRaised);
 
             const scenarios = [
-                { id: 'projects', name: 'Number of Projects & Users per Project' },
+                { id: 'projects', name: 'Total Projects' },
+                { id: 'users', name: 'Users per Project' },
                 { id: 'avgContribution', name: 'Avg. Contribution per User' }
             ];
 
@@ -185,14 +211,16 @@
             let mostImportantVariable = '';
 
             scenarios.forEach(scenario => {
-                let newProjects = baseProjects;
+                let newProjects = baseTotalProjects;
                 let newUsers = baseUsers;
                 let newFundsRaised = baseFundsRaised;
                 let newAvgContribution = baseAvgContribution;
 
                 switch (scenario.id) {
                     case 'projects':
-                        newProjects = baseProjects * changeFactor;
+                        newProjects = baseTotalProjects * changeFactor;
+                        break;
+                    case 'users':
                         newUsers = baseUsers * changeFactor;
                         newFundsRaised = newUsers * newAvgContribution;
                         break;
@@ -225,7 +253,7 @@
                 <div class="result-card" style="border-left-color: #34495e;">
                     <h3>Baseline Scenario</h3>
                     <p><strong>Net Profit:</strong> $${baseProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-                    <p><strong>Total Cost:</strong> $${(fixedCost + Math.ceil(baseProjects / (bdKpi * 12)) * 2000 * 12).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    <p><strong>Total Cost:</strong> $${(fixedCost + (bdCount * BASE_BD_SALARY_YEARLY)).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                 </div>
             `;
 
@@ -253,13 +281,29 @@
             document.getElementById('results').style.display = 'block';
 
             // Tipping Point Analysis
-            tippingPointAnalysis(baseProjects, baseUsers, baseFundsRaised, baseFeePct, claimFeePct, baseAvgContribution);
+            tippingPointAnalysis(baseTotalProjects, baseUsers, baseAvgContribution, baseFeePct, purchaseFeeUSD, claimsPerUser, purchasesPerUser);
         }
 
-        function tippingPointAnalysis(projects, users, fundsRaised, feePct, claimFeePct, avgContribution) {
-            // New logic: revenue multipliers are now identical
+        function tippingPointAnalysis(totalProjects, users, avgContribution, feePct, purchaseFee, claimsPerUser, purchasesPerUser) {
             const tippingPointResultElement = document.getElementById('tippingPointResult');
-            let text = `Given the new revenue model where **claim fees are a percentage of funds raised**, the profitability of increasing **Number of Projects** and **Avg. Contribution per User** is almost identical. Both strategies are equally important for revenue growth.`;
+            let text = "";
+
+            // Calculate revenue multipliers for each variable
+            const projectsMultiplier = (users * avgContribution * (feePct / 100)) + (users * purchasesPerUser * purchaseFee) + (users * claimsPerUser * purchaseFee);
+            const usersMultiplier = (totalProjects * avgContribution * (feePct / 100)) + (totalProjects * purchasesPerUser * purchaseFee) + (totalProjects * claimsPerUser * purchaseFee);
+            const contributionMultiplier = (totalProjects * users * (feePct / 100));
+
+            // Compare multipliers
+            if (projectsMultiplier > usersMultiplier && projectsMultiplier > contributionMultiplier) {
+                 text = `Given the current parameters, **increasing Total Projects** is the most effective strategy. Its impact is more significant than increasing user numbers or average contribution.`;
+            } else if (usersMultiplier > projectsMultiplier && usersMultiplier > contributionMultiplier) {
+                text = `Given the current parameters, **increasing Users per Project** is the most effective strategy. The high purchase and claim fees make attracting more users the most profitable lever.`;
+            } else if (contributionMultiplier > projectsMultiplier && contributionMultiplier > usersMultiplier) {
+                text = `Given the current parameters, **increasing Avg. Contribution per User** is the most effective strategy. This suggests that the platform fee is a major revenue driver, making higher user contributions the key to profitability.`;
+            } else {
+                text = `Under these conditions, multiple variables have a similar impact on profitability. You should focus on the strategy that is easiest to implement, whether that's attracting more projects, more users, or increasing average contribution.`;
+            }
+
             tippingPointResultElement.innerHTML = text;
             document.getElementById('tippingPointAnalysis').style.display = 'block';
         }
