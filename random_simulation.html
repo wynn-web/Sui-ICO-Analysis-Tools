@@ -136,14 +136,36 @@
                 </div>
             </div>
             <div>
-                <h3>Service Fee (USD)</h3>
+                <h3>Claim Fee (%)</h3>
                 <div class="input-group">
-                    <label for="serviceFeeMin">Min:</label>
-                    <input type="number" id="serviceFeeMin" value="0.1" step="0.1">
+                    <label for="claimFeeMin">Min:</label>
+                    <input type="number" id="claimFeeMin" value="0.1" step="0.1">
                 </div>
                 <div class="input-group">
-                    <label for="serviceFeeMax">Max:</label>
-                    <input type="number" id="serviceFeeMax" value="5" step="0.1">
+                    <label for="claimFeeMax">Max:</label>
+                    <input type="number" id="claimFeeMax" value="5" step="0.1">
+                </div>
+            </div>
+            <div>
+                <h3>Fixed Cost (USD)</h3>
+                <div class="input-group">
+                    <label for="fixedCostMin">Min:</label>
+                    <input type="number" id="fixedCostMin" value="1000">
+                </div>
+                <div class="input-group">
+                    <label for="fixedCostMax">Max:</label>
+                    <input type="number" id="fixedCostMax" value="10000">
+                </div>
+            </div>
+            <div>
+                <h3>BD Monthly Project KPI</h3>
+                <div class="input-group">
+                    <label for="bdKpiMin">Min:</label>
+                    <input type="number" id="bdKpiMin" value="1">
+                </div>
+                <div class="input-group">
+                    <label for="bdKpiMax">Max:</label>
+                    <input type="number" id="bdKpiMax" value="5">
                 </div>
             </div>
             <div>
@@ -179,8 +201,12 @@
             const fundsRaisedMax = parseFloat(document.getElementById('fundsRaisedMax').value);
             const platformFeeMin = parseFloat(document.getElementById('platformFeeMin').value);
             const platformFeeMax = parseFloat(document.getElementById('platformFeeMax').value);
-            const serviceFeeMin = parseFloat(document.getElementById('serviceFeeMin').value);
-            const serviceFeeMax = parseFloat(document.getElementById('serviceFeeMax').value);
+            const claimFeeMin = parseFloat(document.getElementById('claimFeeMin').value);
+            const claimFeeMax = parseFloat(document.getElementById('claimFeeMax').value);
+            const fixedCostMin = parseFloat(document.getElementById('fixedCostMin').value);
+            const fixedCostMax = parseFloat(document.getElementById('fixedCostMax').value);
+            const bdKpiMin = parseFloat(document.getElementById('bdKpiMin').value);
+            const bdKpiMax = parseFloat(document.getElementById('bdKpiMax').value);
 
             let projectsWinCount = 0;
             let avgContributionWinCount = 0;
@@ -197,17 +223,16 @@
             totalSimulationsElement.textContent = `Running ${numSimulations.toLocaleString()} simulations...`;
 
             for (let i = 0; i < numSimulations; i++) {
-                // Generate random data within the specified ranges
                 const projects = getRandom(projectsMin, projectsMax);
                 const users = getRandom(usersMin, usersMax);
                 const fundsRaised = getRandom(fundsRaisedMin, fundsRaisedMax);
                 const platformFeePct = getRandom(platformFeeMin, platformFeeMax);
-                const serviceFee = getRandom(serviceFeeMin, serviceFeeMax);
+                const claimFeePct = getRandom(claimFeeMin, claimFeeMax);
 
                 const avgContribution = fundsRaised / users;
 
-                const projectRevenueMultiplier = (users * avgContribution * (platformFeePct / 100)) + (users * serviceFee);
-                const contributionRevenueMultiplier = (users * projects * (platformFeePct / 100));
+                const projectRevenueMultiplier = (users * avgContribution * (platformFeePct / 100)) + (users * avgContribution * (claimFeePct / 100));
+                const contributionRevenueMultiplier = (users * projects * (platformFeePct / 100)) + (users * projects * (claimFeePct / 100));
 
                 if (projectRevenueMultiplier > contributionRevenueMultiplier) {
                     projectsWinCount++;
