@@ -99,6 +99,7 @@
         <div class="input-group">
             <label for="baseProjects">Baseline Projects</label>
             <input type="number" id="baseProjects" value="10" min="0">
+            <small>Natural projects, independent of BD effort.</small>
         </div>
         <div class="input-group">
             <label for="bdCount">Number of BDs</label>
@@ -107,7 +108,7 @@
         <div class="input-group">
             <label for="bdKpi">BD Monthly Project KPI</label>
             <input type="number" id="bdKpi" value="3" min="1">
-            <small>Number of projects each BD must bring in per month.</small>
+            <small>Projects each BD must bring in per month.</small>
         </div>
         <div class="input-group">
             <label for="baseUsers">Number of Users per Project</label>
@@ -128,14 +129,6 @@
         <div class="input-group">
             <label for="baseFeePct">Platform Fee (%)</label>
             <input type="number" id="baseFeePct" value="3" min="0" max="100">
-        </div>
-        <div class="input-group">
-            <label for="purchaseFeeUSD">Purchase Fee (USD)</label>
-            <input type="number" id="purchaseFeeUSD" value="0.6" min="0" step="0.1">
-        </div>
-        <div class="input-group">
-            <label for="claimFeeUSD">Claim Fee (USD)</label>
-            <input type="number" id="claimFeeUSD" value="0.6" min="0" step="0.1">
         </div>
         <div class="input-group">
             <label for="fixedCost">Fixed Cost (R&D, etc.) (USD)</label>
@@ -162,16 +155,16 @@
 
         <div id="tippingPointAnalysis" class="results-section" style="display: none;">
             <h2>Tipping Point Analysis</h2>
-            <p>This analysis compares the profitability of increasing **Total Projects**, **Users per Project**, and **Avg. Contribution per User**.</p>
             <p id="tippingPointResult"></p>
         </div>
     </div>
 
     <script>
         function runAnalysis() {
-            const BASE_BD_SALARY_YEARLY = 2000 * 12;
+            const PURCHASE_FEE_USD = 0.6;
+            const CLAIM_FEE_USD = 0.6;
+            const BD_SALARY_YEARLY = 2000 * 12;
 
-            // Get baseline data
             const baseProjects = parseFloat(document.getElementById('baseProjects').value);
             const bdCount = parseFloat(document.getElementById('bdCount').value);
             const bdKpi = parseFloat(document.getElementById('bdKpi').value);
@@ -180,8 +173,6 @@
             const claimsPerUser = parseFloat(document.getElementById('claimsPerUser').value);
             const baseFundsRaised = parseFloat(document.getElementById('baseFundsRaised').value);
             const baseFeePct = parseFloat(document.getElementById('baseFeePct').value);
-            const purchaseFeeUSD = parseFloat(document.getElementById('purchaseFeeUSD').value);
-            const claimFeeUSD = parseFloat(document.getElementById('claimFeeUSD').value);
             const fixedCost = parseFloat(document.getElementById('fixedCost').value);
             const changePct = parseFloat(document.getElementById('changePct').value);
             const changeFactor = 1 + (changePct / 100);
@@ -191,10 +182,14 @@
 
             function calculateProfit(totalProjects, users, fundsRaised) {
                 const platformRevenue = (totalProjects * fundsRaised * (baseFeePct / 100));
-                const purchaseFeeRevenue = (totalProjects * users * purchasesPerUser * purchaseFeeUSD);
-                const claimFeeRevenue = (totalProjects * users * claimsPerUser * claimFeeUSD);
+                const purchaseFeeRevenue = (totalProjects * users * purchasesPerUser * PURCHASE_FEE_USD);
+                const claimFeeRevenue = (totalProjects * users * claimsPerUser * CLAIM_FEE_USD);
                 const totalRevenue = platformRevenue + purchaseFeeRevenue + claimFeeRevenue;
-                const totalCost = fixedCost + (bdCount * BASE_BD_SALARY_YEARLY);
+                
+                const bdCountNeeded = Math.ceil((totalProjects - baseProjects) / (bdKpi * 12));
+                const bdCost = bdCountNeeded > 0 ? bdCountNeeded * BD_SALARY_YEARLY : 0;
+                const totalCost = fixedCost + bdCost;
+
                 return totalRevenue - totalCost;
             }
 
@@ -219,6 +214,7 @@
                 switch (scenario.id) {
                     case 'projects':
                         newProjects = baseTotalProjects * changeFactor;
+                        newFundsRaised = newProjects * baseAvgContribution;
                         break;
                     case 'users':
                         newUsers = baseUsers * changeFactor;
@@ -245,7 +241,6 @@
                 }
             });
 
-            // Display results
             const resultsGrid = document.getElementById('resultsGrid');
             resultsGrid.innerHTML = '';
             
@@ -253,7 +248,7 @@
                 <div class="result-card" style="border-left-color: #34495e;">
                     <h3>Baseline Scenario</h3>
                     <p><strong>Net Profit:</strong> $${baseProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-                    <p><strong>Total Cost:</strong> $${(fixedCost + (bdCount * BASE_BD_SALARY_YEARLY)).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    <p><strong>Total Cost:</strong> $${(fixedCost + (Math.ceil((baseTotalProjects - baseProjects) / (bdKpi * 12)) * BD_SALARY_YEARLY)).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                 </div>
             `;
 
@@ -269,7 +264,6 @@
                 `;
             });
 
-            // Display summary
             const summaryElement = document.getElementById('summary');
             if (baseProfit > 0) {
                  summaryElement.innerHTML = `Based on these settings, the most effective way to grow your profit is by focusing on **${mostImportantVariable}**, which yields a growth of <span class="highlight">${maxGrowth.toFixed(2)}%</span>.`;
@@ -280,20 +274,17 @@
             }
             document.getElementById('results').style.display = 'block';
 
-            // Tipping Point Analysis
-            tippingPointAnalysis(baseTotalProjects, baseUsers, baseAvgContribution, baseFeePct, purchaseFeeUSD, claimsPerUser, purchasesPerUser);
+            tippingPointAnalysis(baseTotalProjects, baseUsers, baseAvgContribution, baseFeePct, purchaseFeeUSD, claimsPerUser, purchasesPerUser, fixedCost, bdKpi);
         }
 
-        function tippingPointAnalysis(totalProjects, users, avgContribution, feePct, purchaseFee, claimsPerUser, purchasesPerUser) {
+        function tippingPointAnalysis(totalProjects, users, avgContribution, feePct, purchaseFee, claimsPerUser, purchasesPerUser, fixedCost, bdKpi) {
             const tippingPointResultElement = document.getElementById('tippingPointResult');
             let text = "";
 
-            // Calculate revenue multipliers for each variable
             const projectsMultiplier = (users * avgContribution * (feePct / 100)) + (users * purchasesPerUser * purchaseFee) + (users * claimsPerUser * purchaseFee);
             const usersMultiplier = (totalProjects * avgContribution * (feePct / 100)) + (totalProjects * purchasesPerUser * purchaseFee) + (totalProjects * claimsPerUser * purchaseFee);
             const contributionMultiplier = (totalProjects * users * (feePct / 100));
 
-            // Compare multipliers
             if (projectsMultiplier > usersMultiplier && projectsMultiplier > contributionMultiplier) {
                  text = `Given the current parameters, **increasing Total Projects** is the most effective strategy. Its impact is more significant than increasing user numbers or average contribution.`;
             } else if (usersMultiplier > projectsMultiplier && usersMultiplier > contributionMultiplier) {
