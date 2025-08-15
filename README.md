@@ -46,7 +46,7 @@ $$
 To effectively present our analysis, we have created three interactive web pages that transition from fundamental analysis to strategic decision support.
 
 #### **Tool 1: Comprehensive Sensitivity Analysis**
-[Try the tool here](https://wynn-web.github.io/Sui-ICO-Analysis-Tools/)
+[Try the tool here](https://wynn-web.github.io/Sui-ICO-Analysis-Tools/Comprehensive%20Sensitivity%20Analysis.html)
 
 * **Purpose**: To identify which business metric is the most powerful growth driver.
 * **Calculation Logic**:
