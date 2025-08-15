@@ -218,7 +218,6 @@
                 let newProjects = baseTotalProjects;
                 let newUsers = baseUsers;
                 let newFundsRaised = baseFundsRaised;
-                let newAvgContribution = baseAvgContribution;
 
                 switch (scenario.id) {
                     case 'projects':
@@ -226,11 +225,10 @@
                         break;
                     case 'users':
                         newUsers = baseUsers * changeFactor;
-                        newFundsRaised = newUsers * newAvgContribution;
+                        newFundsRaised = newUsers * baseAvgContribution;
                         break;
                     case 'avgContribution':
-                        newAvgContribution = baseAvgContribution * changeFactor;
-                        newFundsRaised = newAvgContribution * baseUsers;
+                        newFundsRaised = (baseFundsRaised / baseUsers) * changeFactor * baseUsers;
                         break;
                 }
                 const newProfit = calculateProfit(newProjects, newUsers, newFundsRaised);
