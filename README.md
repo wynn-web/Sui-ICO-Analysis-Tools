@@ -43,7 +43,10 @@ $$
 
 ### **2. Interactive Tools & Logic Explained**
 
+To effectively present our analysis, we have created three interactive web pages that transition from fundamental analysis to strategic decision support.
+
 #### **Tool 1: Comprehensive Sensitivity Analysis**
+[Try the tool here](https://wynn-web.github.io/Sui-ICO-Analysis-Tools/)
 
 * **Purpose**: To identify which business metric is the most powerful growth driver.
 * **Calculation Logic**:
@@ -52,7 +55,8 @@ $$
     * Calculates the new profit and the **Net Profit Growth** for each scenario.
 * **Output**: A side-by-side comparison of net profit and growth rates, highlighting the most impactful variable.
 
-#### **Tool 3: Market Entry Advisor (DCF Model)**
+#### **Tool 2: Market Entry Advisor (DCF Model)**
+[Try the tool here](https://wynn-web.github.io/Sui-ICO-Analysis-Tools/market_entry_advisor.html)
 
 * **Purpose**: To provide a professional, finance-based recommendation on whether to enter the market.
 * **Calculation Logic**:
@@ -61,7 +65,8 @@ $$
     * **Key variables**: **Discount Rate** (the risk premium for a high-risk project like Web3) and a **Growth Rate** for future profits.
 * **Output**: A clear recommendation (`GO`, `CAUTION`, or `STOP`) based on whether the NPV is positive and if the business is currently profitable.
 
-#### **Tool 4: Success Threshold Calculator**
+#### **Tool 3: Success Threshold Calculator**
+[Try the tool here](https://wynn-web.github.io/Sui-ICO-Analysis-Tools/success_threshold_calculator.html)
 
 * **Purpose**: To translate a high-level financial goal into concrete, actionable business targets.
 * **Calculation Logic**:
