@@ -103,17 +103,33 @@
 <body>
 
     <div class="container">
-        <h1>Market Entry Advisor</h1>
-        <p>This tool helps you decide whether to enter the market by analyzing potential profit, success thresholds, and risks.</p>
+        <h1>Market Entry Advisor (DCF Model)</h1>
+        <p>This tool helps you decide whether to enter the market by analyzing the project's Net Present Value (NPV) and profitability.</p>
 
         <h2>Baseline Scenario Data</h2>
         <div class="input-group">
-            <label for="baseProjects">Number of Projects</label>
-            <input type="number" id="baseProjects" value="15" min="0">
+            <label for="baseProjects">Baseline Projects</label>
+            <input type="number" id="baseProjects" value="10" min="0">
+        </div>
+        <div class="input-group">
+            <label for="bdCount">Number of BDs</label>
+            <input type="number" id="bdCount" value="2" min="0">
+        </div>
+        <div class="input-group">
+            <label for="bdKpi">BD Monthly Project KPI</label>
+            <input type="number" id="bdKpi" value="3" min="1">
         </div>
         <div class="input-group">
             <label for="baseUsers">Number of Users per Project</label>
             <input type="number" id="baseUsers" value="300" min="0">
+        </div>
+        <div class="input-group">
+            <label for="purchasesPerUser">Purchases per User</label>
+            <input type="number" id="purchasesPerUser" value="2" min="1">
+        </div>
+        <div class="input-group">
+            <label for="claimsPerUser">Claims per User</label>
+            <input type="number" id="claimsPerUser" value="5" min="1">
         </div>
         <div class="input-group">
             <label for="baseFundsRaised">Funds Raised per Project (USDT)</label>
@@ -124,34 +140,36 @@
             <input type="number" id="baseFeePct" value="3" min="0" max="100">
         </div>
         <div class="input-group">
-            <label for="baseServiceFee">Service Fee (per purchase, USD)</label>
-            <input type="number" id="baseServiceFee" value="0.5" min="0" step="0.1">
+            <label for="fixedCost">Fixed Cost (R&D, etc.) (USD)</label>
+            <input type="number" id="fixedCost" value="10000" min="0">
         </div>
         <div class="input-group">
-            <label for="baseCost">Total Annual Cost (USD)</label>
-            <input type="number" id="baseCost" value="10000" min="0">
+            <label for="marketCap">Total Project Market Cap</label>
+            <input type="number" id="marketCap" value="80" min="0">
         </div>
 
         <hr>
 
-        <h2>Decision Factors</h2>
+        <h2>DCF Model Parameters</h2>
         <div class="input-group">
-            <label for="breakEvenProjects">Break-even Point (Number of Projects)</label>
-            <input type="number" id="breakEvenProjects" value="10" min="1">
-            <small>At what number of projects will your business break even?</small>
+            <label for="discountRate">Discount Rate (%)</label>
+            <input type="number" id="discountRate" value="10" min="0" step="0.1">
+            <small>Represents the risk and opportunity cost of the project.</small>
         </div>
         <div class="input-group">
-            <label for="optimisticGrowth">Optimistic Growth (%)</label>
-            <input type="number" id="optimisticGrowth" value="50" min="1">
-            <small>How much growth do you expect in the first year in your best-case scenario?</small>
+            <label for="growthRate">Annual Profit Growth Rate (%)</label>
+            <input type="number" id="growthRate" value="20" min="0" step="0.1">
+            <small>Used for calculating future cash flows in the DCF model.</small>
         </div>
         <div class="input-group">
-            <label for="riskTolerance">Risk Tolerance Level</label>
-            <select id="riskTolerance">
-                <option value="low">Low (Avoids all risk)</option>
-                <option value="medium">Medium (Accepts some risk)</option>
-                <option value="high">High (Aggressively pursues growth)</option>
-            </select>
+            <label for="terminalGrowthRate">Terminal Growth Rate (%)</label>
+            <input type="number" id="terminalGrowthRate" value="2" min="0" step="0.1">
+            <small>The long-term profit growth rate after the explicit forecast period.</small>
+        </div>
+        <div class="input-group">
+            <label for="forecastYears">Forecast Period (Years)</label>
+            <input type="number" id="forecastYears" value="5" min="1">
+            <small>Number of years to explicitly forecast cash flows.</small>
         </div>
         
         <button class="btn" onclick="runDecision()">Get Market Entry Advice</button>
@@ -165,81 +183,93 @@
 
     <script>
         function runDecision() {
-            // Get baseline data
+            const PURCHASE_FEE_USD = 0.6;
+            const CLAIM_FEE_USD = 0.6;
+            const BD_SALARY_YEARLY = 2000 * 12;
+            
             const baseProjects = parseFloat(document.getElementById('baseProjects').value);
+            const bdCount = parseFloat(document.getElementById('bdCount').value);
+            const bdKpi = parseFloat(document.getElementById('bdKpi').value);
             const baseUsers = parseFloat(document.getElementById('baseUsers').value);
+            const purchasesPerUser = parseFloat(document.getElementById('purchasesPerUser').value);
+            const claimsPerUser = parseFloat(document.getElementById('claimsPerUser').value);
             const baseFundsRaised = parseFloat(document.getElementById('baseFundsRaised').value);
             const baseFeePct = parseFloat(document.getElementById('baseFeePct').value);
-            const baseServiceFee = parseFloat(document.getElementById('baseServiceFee').value);
-            const baseCost = parseFloat(document.getElementById('baseCost').value);
+            const fixedCost = parseFloat(document.getElementById('fixedCost').value);
+            const marketCap = parseFloat(document.getElementById('marketCap').value);
+            
+            const discountRate = parseFloat(document.getElementById('discountRate').value) / 100;
+            const growthRate = parseFloat(document.getElementById('growthRate').value) / 100;
+            const terminalGrowthRate = parseFloat(document.getElementById('terminalGrowthRate').value) / 100;
+            const forecastYears = parseInt(document.getElementById('forecastYears').value);
 
-            // Get decision factors
-            const breakEvenProjects = parseFloat(document.getElementById('breakEvenProjects').value);
-            const optimisticGrowth = parseFloat(document.getElementById('optimisticGrowth').value);
-            const riskTolerance = document.getElementById('riskTolerance').value;
-
-            // Calculate current profit and optimistic profit
+            const bdProjectsFromTeam = bdCount * bdKpi * 12;
+            const baseTotalProjects = Math.min(baseProjects + bdProjectsFromTeam, marketCap);
             const baseAvgContribution = baseFundsRaised / baseUsers;
-            const baseRevenue = (baseProjects * baseFundsRaised * (baseFeePct / 100)) + (baseProjects * baseUsers * baseServiceFee);
-            const baseProfit = baseRevenue - baseCost;
 
-            const optimisticProjects = baseProjects * (1 + optimisticGrowth / 100);
-            const optimisticUsers = baseUsers * (1 + optimisticGrowth / 100);
-            const optimisticFundsRaised = optimisticUsers * (baseFundsRaised / baseUsers);
-            const optimisticRevenue = (optimisticProjects * optimisticFundsRaised * (baseFeePct / 100)) + (optimisticProjects * optimisticUsers * baseServiceFee);
-            const optimisticProfit = optimisticRevenue - baseCost;
+            function calculateProfit(totalProjects, users, fundsRaised, bdCount) {
+                const platformRevenue = (totalProjects * fundsRaised * (baseFeePct / 100));
+                const purchaseFeeRevenue = (totalProjects * users * purchasesPerUser * PURCHASE_FEE_USD);
+                const claimFeeRevenue = (totalProjects * users * claimsPerUser * CLAIM_FEE_USD);
+                const totalRevenue = platformRevenue + purchaseFeeRevenue + claimFeeRevenue;
+                
+                const bdProjects = totalProjects - baseProjects;
+                const bdCountNeeded = bdProjects > 0 ? Math.ceil(bdProjects / (bdKpi * 12)) : 0;
+                const bdCost = bdCountNeeded * BD_SALARY_YEARLY;
+                const totalCost = fixedCost + bdCost;
+
+                return totalRevenue - totalCost;
+            }
+
+            const baseProfit = calculateProfit(baseTotalProjects, baseUsers, baseFundsRaised, bdCount);
+
+            // DCF Model Calculation
+            let npv = 0;
+            let projects = baseTotalProjects;
+            let profit = baseProfit;
+            let totalProjects = projects;
+            
+            for (let i = 1; i <= forecastYears; i++) {
+                projects = Math.min(projects * (1 + growthRate), marketCap);
+                profit = calculateProfit(projects, baseUsers, (baseFundsRaised / baseUsers) * baseUsers, bdCount);
+                npv += profit / Math.pow(1 + discountRate, i);
+                
+                if (projects >= marketCap) {
+                    projects = marketCap;
+                    profit = calculateProfit(projects, baseUsers, (baseFundsRaised / baseUsers) * baseUsers, bdCount);
+                }
+            }
+
+            // Terminal Value (after forecast period)
+            if (discountRate > terminalGrowthRate) {
+                const terminalValue = (profit * (1 + terminalGrowthRate)) / (discountRate - terminalGrowthRate);
+                npv += terminalValue / Math.pow(1 + discountRate, forecastYears);
+            }
 
             // Determine the decision
             let decision = '';
             let reasons = [];
 
-            // Condition 1: Check if the business is profitable in the baseline scenario
+            if (npv > 0) {
+                reasons.push(`✅ **Positive NPV:** The project's Net Present Value is <strong>$${npv.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>, indicating a strong positive inherent value after discounting future cash flows.`);
+            } else {
+                reasons.push(`❌ **Negative NPV:** The project's Net Present Value is <strong>$${npv.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>. A negative NPV suggests the project may not be a worthwhile investment at the current discount rate.`);
+            }
+
             if (baseProfit > 0) {
-                reasons.push("✅ **Baseline Profitability:** The business is already profitable with your current assumptions. This is a strong indicator of a viable market.");
+                reasons.push("✅ **Baseline Profitability:** The business is already profitable under your current assumptions, which provides a solid foundation.");
             } else {
-                reasons.push("⚠️ **Baseline Loss:** The business is not profitable under your current assumptions. Entering the market without a clear path to profitability is highly risky.");
+                reasons.push("⚠️ **Baseline Loss:** The business is not yet profitable under your current assumptions, highlighting the need for growth to achieve a positive cash flow.");
             }
 
-            // Condition 2: Check if the break-even point is achievable
-            if (breakEvenProjects > baseProjects) {
-                 reasons.push(`⚠️ **Break-even Threshold:** Your break-even point is at ${breakEvenProjects} projects, which is higher than your current ${baseProjects} projects. This means you have to grow to be profitable.`);
+            if (npv > 0 && baseProfit > 0) {
+                decision = 'GO';
+            } else if (npv > 0 && baseProfit <= 0) {
+                decision = 'CAUTION';
             } else {
-                reasons.push(`✅ **Low Threshold:** Your break-even point is at ${breakEvenProjects} projects, which is lower than or equal to your current ${baseProjects} projects. Profitability is already within reach.`);
+                decision = 'STOP';
             }
-
-            // Condition 3: Check optimistic scenario
-            if (optimisticProfit > 0) {
-                reasons.push(`✅ **Optimistic Profitability:** In an optimistic scenario with ${optimisticGrowth}% growth, your annual profit could reach $${optimisticProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}. This represents a significant market opportunity.`);
-            } else {
-                reasons.push(`❌ **Optimistic Loss:** Even in an optimistic scenario with ${optimisticGrowth}% growth, the business would still face losses. The fundamental business model may need rethinking.`);
-            }
-
-            // Final decision logic based on risk tolerance and conditions
-            if (riskTolerance === 'high') {
-                if (optimisticProfit > 0) {
-                    decision = 'GO';
-                } else {
-                    decision = 'STOP';
-                }
-            } else if (riskTolerance === 'medium') {
-                if (baseProfit > 0 && breakEvenProjects <= baseProjects) {
-                    decision = 'GO';
-                } else if (optimisticProfit > 0 && breakEvenProjects > baseProjects) {
-                    decision = 'CAUTION';
-                    reasons.push("➡️ **Medium Risk:** Proceed with caution. While there's potential, you need to hit your growth targets to become profitable.");
-                } else {
-                    decision = 'STOP';
-                }
-            } else if (riskTolerance === 'low') {
-                 if (baseProfit > 0 && breakEvenProjects <= baseProjects) {
-                    decision = 'GO';
-                    reasons.push("➡️ **Low Risk:** This scenario is highly favorable and aligns with a low-risk tolerance. The path to profitability is clear and achievable.");
-                } else {
-                    decision = 'STOP';
-                    reasons.push("➡️ **Low Risk:** The potential for initial losses is high, which does not align with a low-risk tolerance strategy.");
-                }
-            }
-
+            
             // Display results
             const decisionBox = document.getElementById('decisionBox');
             const reasonBox = document.getElementById('reasonBox');
