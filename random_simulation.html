@@ -214,11 +214,10 @@
 
     <script>
         function runSimulation() {
-            const BASE_BD_SALARY_YEARLY = 2000 * 12;
             const PURCHASE_FEE_USD = 0.6;
             const CLAIM_FEE_USD = 0.6;
+            const BD_SALARY_YEARLY = 2000 * 12;
 
-            // Get user-defined ranges
             const numSimulations = parseInt(document.getElementById('numSimulations').value);
             const baseProjectsMin = parseFloat(document.getElementById('baseProjectsMin').value);
             const baseProjectsMax = parseFloat(document.getElementById('baseProjectsMax').value);
@@ -238,6 +237,7 @@
             const platformFeeMax = parseFloat(document.getElementById('platformFeeMax').value);
             const fixedCostMin = parseFloat(document.getElementById('fixedCostMin').value);
             const fixedCostMax = parseFloat(document.getElementById('fixedCostMax').value);
+            const changeFactor = 1.2;
 
             let projectsWinCount = 0;
             let usersWinCount = 0;
@@ -265,22 +265,21 @@
                 const fundsRaised = getRandom(fundsRaisedMin, fundsRaisedMax);
                 const platformFeePct = getRandom(platformFeeMin, platformFeeMax);
                 const fixedCost = getRandom(fixedCostMin, fixedCostMax);
-                const changeFactor = 1.2; // A fixed 20% increase for simulation comparison
 
                 const totalProjects = baseProjects + (bdCount * bdKpi * 12);
                 const avgContribution = fundsRaised / users;
 
-                // --- Calculate Baseline Profit ---
-                const baseProfit = calculateProfit(totalProjects, users, fundsRaised, bdCount, fixedCost, platformFeePct, purchasesPerUser, claimsPerUser);
+                const baseProfit = calculateProfit(totalProjects, users, fundsRaised, bdKpi, fixedCost, platformFeePct, purchasesPerUser, claimsPerUser);
 
-                // --- Calculate New Profits for each scenario ---
                 const newProjects = totalProjects * changeFactor;
                 const newUsers = users * changeFactor;
+                const newFundsRaisedFromUsers = newUsers * avgContribution;
                 const newAvgContribution = avgContribution * changeFactor;
-
-                const profitProjects = calculateProfit(newProjects, users, fundsRaised, bdCount, fixedCost, platformFeePct, purchasesPerUser, claimsPerUser);
-                const profitUsers = calculateProfit(totalProjects, newUsers, newUsers * newAvgContribution, bdCount, fixedCost, platformFeePct, purchasesPerUser, claimsPerUser);
-                const profitAvgContribution = calculateProfit(totalProjects, users, users * newAvgContribution, bdCount, fixedCost, platformFeePct, purchasesPerUser, claimsPerUser);
+                const newFundsRaisedFromAvgContribution = newAvgContribution * users;
+                
+                const profitProjects = calculateProfit(newProjects, users, fundsRaised, bdKpi, fixedCost, platformFeePct, purchasesPerUser, claimsPerUser);
+                const profitUsers = calculateProfit(totalProjects, newUsers, newFundsRaisedFromUsers, bdKpi, fixedCost, platformFeePct, purchasesPerUser, claimsPerUser);
+                const profitAvgContribution = calculateProfit(totalProjects, users, newFundsRaisedFromAvgContribution, bdKpi, fixedCost, platformFeePct, purchasesPerUser, claimsPerUser);
 
                 const growthProjects = (profitProjects - baseProfit) / baseProfit;
                 const growthUsers = (profitUsers - baseProfit) / baseProfit;
@@ -298,7 +297,7 @@
                     if (growths[i].growth > maxGrowth) {
                         maxGrowth = growths[i].growth;
                         winners = [growths[i].name];
-                    } else if (growths[i].growth === maxGrowth) {
+                    } else if (Math.abs(growths[i].growth - maxGrowth) < 0.0001) {
                         winners.push(growths[i].name);
                     }
                 }
@@ -317,17 +316,17 @@
             totalSimulationsElement.textContent = `Completed ${numSimulations.toLocaleString()} simulations.`;
             projectsCountElement.textContent = projectsWinCount.toLocaleString();
             usersCountElement.textContent = usersWinCount.toLocaleString();
-            avgContributionCountElement.textContent = avgContributionWinCount.toLocaleString();
+            avgContributionCountElement.textContent = avgContributionCount.toLocaleString();
             equalCountElement.textContent = equalCount.toLocaleString();
 
             const total = projectsWinCount + usersWinCount + avgContributionWinCount + equalCount;
             let conclusionText = "";
 
-            if (projectsWinCount / total > 0.4) {
+            if (projectsWinCount > total * 0.4) {
                  conclusionText = "Conclusion: Based on a wide range of scenarios, focusing on **Total Projects** is generally the more profitable strategy.";
-            } else if (usersWinCount / total > 0.4) {
+            } else if (usersWinCount > total * 0.4) {
                  conclusionText = "Conclusion: Based on a wide range of scenarios, focusing on **Users per Project** is generally the more profitable strategy.";
-            } else if (avgContributionWinCount / total > 0.4) {
+            } else if (avgContributionWinCount > total * 0.4) {
                  conclusionText = "Conclusion: Based on a wide range of scenarios, focusing on **Avg. Contribution per User** is generally the more profitable strategy.";
             } else {
                  conclusionText = "Conclusion: The optimal strategy depends heavily on specific market conditions. All three variables have a significant impact.";
@@ -337,16 +336,18 @@
             finalConclusionElement.classList.add('highlight');
         }
 
-        function calculateProfit(totalProjects, users, fundsRaised, bdCount, fixedCost, platformFeePct, purchasesPerUser, claimsPerUser) {
+        function calculateProfit(totalProjects, users, fundsRaised, bdKpi, fixedCost, platformFeePct, purchasesPerUser, claimsPerUser) {
             const purchaseFeeUSD = 0.6;
             const claimFeeUSD = 0.6;
-            const BASE_BD_SALARY_YEARLY = 2000 * 12;
+            const BD_SALARY_YEARLY = 2000 * 12;
 
             const platformRevenue = (totalProjects * fundsRaised * (platformFeePct / 100));
             const purchaseFeeRevenue = (totalProjects * users * purchasesPerUser * purchaseFeeUSD);
             const claimFeeRevenue = (totalProjects * users * claimsPerUser * claimFeeUSD);
             const totalRevenue = platformRevenue + purchaseFeeRevenue + claimFeeRevenue;
-            const totalCost = fixedCost + (bdCount * BASE_BD_SALARY_YEARLY);
+            const bdCountNeeded = Math.ceil((totalProjects - parseFloat(document.getElementById('baseProjects').value)) / (bdKpi * 12));
+            const bdCost = bdCountNeeded > 0 ? bdCountNeeded * BD_SALARY_YEARLY : 0;
+            const totalCost = fixedCost + bdCost;
             return totalRevenue - totalCost;
         }
 
