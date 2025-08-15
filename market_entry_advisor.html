@@ -109,7 +109,7 @@
         <h2>Baseline Scenario Data</h2>
         <div class="input-group">
             <label for="baseProjects">Baseline Projects</label>
-            <input type="number" id="baseProjects" value="10" min="0">
+            <input type="number" id="baseProjects" value="5" min="0">
         </div>
         <div class="input-group">
             <label for="bdCount">Number of BDs</label>
@@ -145,7 +145,7 @@
         </div>
         <div class="input-group">
             <label for="marketCap">Total Project Market Cap</label>
-            <input type="number" id="marketCap" value="80" min="0">
+            <input type="number" id="marketCap" value="50" min="0">
         </div>
 
         <hr>
@@ -153,12 +153,12 @@
         <h2>DCF Model Parameters</h2>
         <div class="input-group">
             <label for="discountRate">Discount Rate (%)</label>
-            <input type="number" id="discountRate" value="10" min="0" step="0.1">
+            <input type="number" id="discountRate" value="25" min="0" step="0.1">
             <small>Represents the risk and opportunity cost of the project.</small>
         </div>
         <div class="input-group">
             <label for="growthRate">Annual Profit Growth Rate (%)</label>
-            <input type="number" id="growthRate" value="20" min="0" step="0.1">
+            <input type="number" id="growthRate" value="10" min="0" step="0.1">
             <small>Used for calculating future cash flows in the DCF model.</small>
         </div>
         <div class="input-group">
@@ -182,11 +182,32 @@
     </div>
 
     <script>
-        function runDecision() {
+        function calculateProfit(totalProjects, users, fundsRaised) {
             const PURCHASE_FEE_USD = 0.6;
             const CLAIM_FEE_USD = 0.6;
             const BD_SALARY_YEARLY = 2000 * 12;
+
+            const baseProjects = parseFloat(document.getElementById('baseProjects').value);
+            const bdKpi = parseFloat(document.getElementById('bdKpi').value);
+            const fixedCost = parseFloat(document.getElementById('fixedCost').value);
+            const baseFeePct = parseFloat(document.getElementById('baseFeePct').value);
+            const purchasesPerUser = parseFloat(document.getElementById('purchasesPerUser').value);
+            const claimsPerUser = parseFloat(document.getElementById('claimsPerUser').value);
+
+            const platformRevenue = (totalProjects * fundsRaised * (baseFeePct / 100));
+            const purchaseFeeRevenue = (totalProjects * users * purchasesPerUser * PURCHASE_FEE_USD);
+            const claimFeeRevenue = (totalProjects * users * claimsPerUser * CLAIM_FEE_USD);
+            const totalRevenue = platformRevenue + purchaseFeeRevenue + claimFeeRevenue;
             
+            const bdProjects = totalProjects - baseProjects;
+            const bdCountNeeded = bdProjects > 0 ? Math.ceil(bdProjects / (bdKpi * 12)) : 0;
+            const bdCost = bdCountNeeded * BD_SALARY_YEARLY;
+            const totalCost = fixedCost + bdCost;
+
+            return totalRevenue - totalCost;
+        }
+
+        function runDecision() {
             const baseProjects = parseFloat(document.getElementById('baseProjects').value);
             const bdCount = parseFloat(document.getElementById('bdCount').value);
             const bdKpi = parseFloat(document.getElementById('bdKpi').value);
@@ -207,37 +228,21 @@
             const baseTotalProjects = Math.min(baseProjects + bdProjectsFromTeam, marketCap);
             const baseAvgContribution = baseFundsRaised / baseUsers;
 
-            function calculateProfit(totalProjects, users, fundsRaised, bdCount) {
-                const platformRevenue = (totalProjects * fundsRaised * (baseFeePct / 100));
-                const purchaseFeeRevenue = (totalProjects * users * purchasesPerUser * PURCHASE_FEE_USD);
-                const claimFeeRevenue = (totalProjects * users * claimsPerUser * CLAIM_FEE_USD);
-                const totalRevenue = platformRevenue + purchaseFeeRevenue + claimFeeRevenue;
-                
-                const bdProjects = totalProjects - baseProjects;
-                const bdCountNeeded = bdProjects > 0 ? Math.ceil(bdProjects / (bdKpi * 12)) : 0;
-                const bdCost = bdCountNeeded * BD_SALARY_YEARLY;
-                const totalCost = fixedCost + bdCost;
-
-                return totalRevenue - totalCost;
-            }
-
-            const baseProfit = calculateProfit(baseTotalProjects, baseUsers, baseFundsRaised, bdCount);
+            const baseProfit = calculateProfit(baseTotalProjects, baseUsers, baseFundsRaised);
 
             // DCF Model Calculation
             let npv = 0;
             let projects = baseTotalProjects;
             let profit = baseProfit;
-            let totalProjects = projects;
             
             for (let i = 1; i <= forecastYears; i++) {
-                projects = Math.min(projects * (1 + growthRate), marketCap);
-                profit = calculateProfit(projects, baseUsers, (baseFundsRaised / baseUsers) * baseUsers, bdCount);
-                npv += profit / Math.pow(1 + discountRate, i);
-                
-                if (projects >= marketCap) {
-                    projects = marketCap;
-                    profit = calculateProfit(projects, baseUsers, (baseFundsRaised / baseUsers) * baseUsers, bdCount);
+                if (projects < marketCap) {
+                    projects = projects * (1 + growthRate);
                 }
+                projects = Math.min(projects, marketCap);
+                
+                profit = calculateProfit(projects, baseUsers, baseAvgContribution * baseUsers);
+                npv += profit / Math.pow(1 + discountRate, i);
             }
 
             // Terminal Value (after forecast period)
