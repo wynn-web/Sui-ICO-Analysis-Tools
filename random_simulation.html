@@ -271,6 +271,10 @@
 
                 const baseProfit = calculateProfit(totalProjects, users, fundsRaised, bdKpi, fixedCost, platformFeePct, purchasesPerUser, claimsPerUser);
 
+                if (baseProfit <= 0) { // Skip loss-making baseline scenarios
+                    continue;
+                }
+
                 const newProjects = totalProjects * changeFactor;
                 const newUsers = users * changeFactor;
                 const newFundsRaisedFromUsers = newUsers * avgContribution;
@@ -293,12 +297,12 @@
                 
                 let maxGrowth = -Infinity;
                 let winners = [];
-                for(let i=0; i<growths.length; i++) {
-                    if (growths[i].growth > maxGrowth) {
-                        maxGrowth = growths[i].growth;
-                        winners = [growths[i].name];
-                    } else if (Math.abs(growths[i].growth - maxGrowth) < 0.0001) {
-                        winners.push(growths[i].name);
+                for(let j=0; j<growths.length; j++) {
+                    if (growths[j].growth > maxGrowth) {
+                        maxGrowth = growths[j].growth;
+                        winners = [growths[j].name];
+                    } else if (Math.abs(growths[j].growth - maxGrowth) < 0.0001) {
+                        winners.push(growths[j].name);
                     }
                 }
 
@@ -319,14 +323,14 @@
             avgContributionCountElement.textContent = avgContributionCount.toLocaleString();
             equalCountElement.textContent = equalCount.toLocaleString();
 
-            const total = projectsWinCount + usersWinCount + avgContributionWinCount + equalCount;
+            const total = projectsWinCount + usersWinCount + avgContributionCount + equalCount;
             let conclusionText = "";
 
-            if (projectsWinCount > total * 0.4) {
+            if (projectsWinCount / total > 0.4) {
                  conclusionText = "Conclusion: Based on a wide range of scenarios, focusing on **Total Projects** is generally the more profitable strategy.";
-            } else if (usersWinCount > total * 0.4) {
+            } else if (usersWinCount / total > 0.4) {
                  conclusionText = "Conclusion: Based on a wide range of scenarios, focusing on **Users per Project** is generally the more profitable strategy.";
-            } else if (avgContributionWinCount > total * 0.4) {
+            } else if (avgContributionWinCount / total > 0.4) {
                  conclusionText = "Conclusion: Based on a wide range of scenarios, focusing on **Avg. Contribution per User** is generally the more profitable strategy.";
             } else {
                  conclusionText = "Conclusion: The optimal strategy depends heavily on specific market conditions. All three variables have a significant impact.";
@@ -340,12 +344,13 @@
             const purchaseFeeUSD = 0.6;
             const claimFeeUSD = 0.6;
             const BD_SALARY_YEARLY = 2000 * 12;
-
+            const bdCount = parseFloat(document.getElementById('bdCountMax').value)
+            
             const platformRevenue = (totalProjects * fundsRaised * (platformFeePct / 100));
             const purchaseFeeRevenue = (totalProjects * users * purchasesPerUser * purchaseFeeUSD);
             const claimFeeRevenue = (totalProjects * users * claimsPerUser * claimFeeUSD);
             const totalRevenue = platformRevenue + purchaseFeeRevenue + claimFeeRevenue;
-            const bdCountNeeded = Math.ceil((totalProjects - parseFloat(document.getElementById('baseProjects').value)) / (bdKpi * 12));
+            const bdCountNeeded = Math.ceil( (totalProjects - parseFloat(document.getElementById('baseProjectsMax').value)) / (bdKpi * 12));
             const bdCost = bdCountNeeded > 0 ? bdCountNeeded * BD_SALARY_YEARLY : 0;
             const totalCost = fixedCost + bdCost;
             return totalRevenue - totalCost;
