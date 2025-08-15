@@ -16,9 +16,7 @@ Our analytical model is based on the following key formulas and assumptions:
 
 Total revenue is the sum of three distinct streams, reflecting a more detailed user engagement model:
 
-$$
-\text{Total Revenue} = (\text{Projects} \times \text{Funds Raised}) \times F_{\text{platform}} + (\text{Projects} \times \text{Users} \times \text{Purchases per User}) \times F_{\text{purchase}} + (\text{Projects} \times \text{Users} \times \text{Claims per User}) \times F_{\text{claim}}
-$$
+![Total Revenue Formula](https://latex.codecogs.com/png.image?%5Cdpi%7B150%7D%5Cbg_white%20%5Ctext%7BTotal%20Revenue%7D%20=%20%28%5Ctext%7BProjects%7D%20%5Ctimes%20%5Ctext%7BFunds%20Raised%7D%29%20%5Ctimes%20F_%7B%5Ctext%7Bplatform%7D%7D%20+%20%28%5Ctext%7BProjects%7D%20%5Ctimes%20%5Ctext%7BUsers%7D%20%5Ctimes%20%5Ctext%7BPurchases%20per%20User%7D%29%20%5Ctimes%20F_%7B%5Ctext%7Bpurchase%7D%7D%20+%20%28%5Ctext%7BProjects%7D%20%5Ctimes%20%5Ctext%7BUsers%7D%20%5Ctimes%20%5Ctext%7BClaims%20per%20User%7D%29%20%5Ctimes%20F_%7B%5Ctext%7Bclaim%7D%7D)
 
 * **Projects**: Total projects, limited by market cap and BD team output.
 * **Funds Raised**: Average funds raised per project.
@@ -32,19 +30,17 @@ $$
 
 Our cost model is dynamic and non-linear, directly reflecting the operational efficiency of the BD team.
 
-$$
-\text{Total Cost} = \text{Fixed Cost} + (\text{BD Count}_{\text{needed}} \times \text{BD Salary})
-$$
+![Total Projects Formula](https://latex.codecogs.com/png.image?%5Cdpi%7B150%7D%5Cbg_white%20%5Ctext%7BTotal%20Projects%7D%20=%20%5Cmin%28%5Ctext%7BBaseline%20Projects%7D%20+%20%28%5Ctext%7BBD%20Count%7D%20%5Ctimes%20%5Ctext%7BBD%20KPI%7D%20%5Ctimes%2012%29,%20%5Ctext%7BMarket%20Cap%7D%29)
 
 * **Fixed Cost**: R&D, servers, etc.
 * **BD Salary**: Annual salary for one BD (e.g., 24,000 USD).
 
 **Key Assumptions**: The number of projects a BD can bring in is not infinite. The total project count is capped, and the number of BDs needed scales up in discrete steps.
-* **Total Projects**: $\text{Projects} = \min(\text{Baseline Projects} + (\text{BD Count} \times \text{BD KPI} \times 12), \text{Market Cap})$
+* **Total Projects**: ![Total Projects Formula](https://latex.codecogs.com/png.image?%5Cdpi%7B150%7D%5Cbg_white%20%5Ctext%7BTotal%20Projects%7D%20=%20%5Cmin%28%5Ctext%7BBaseline%20Projects%7D%20+%20%28%5Ctext%7BBD%20Count%7D%20%5Ctimes%20%5Ctext%7BBD%20KPI%7D%20%5Ctimes%2012%29,%20%5Ctext%7BMarket%20Cap%7D%29)
     * **Baseline Projects**: Natural projects, independent of BD effort.
     * **BD KPI**: Projects each BD can bring in per month.
     * **Market Cap**: Maximum number of projects available in the market. This is a critical constraint that prevents the paradox of "infinite BD hiring" and introduces diminishing marginal returns at scale.
-* **BD Count Needed**: $\text{BD Count}_{\text{needed}} = \lceil (\text{Projects} - \text{Baseline Projects}) / (\text{BD KPI} \times 12) \rceil$
+* **BD Count Needed**:![BD Count Needed Formula](https://latex.codecogs.com/png.image?%5Cdpi%7B150%7D%5Cbg_white%20%5Ctext%7BBD%20Count%7D_%7B%5Ctext%7Bneeded%7D%7D%20=%20%5Clceil%20%28%5Ctext%7BProjects%7D%20-%20%5Ctext%7BBaseline%20Projects%7D%29%20/%20%28%5Ctext%7BBD%20KPI%7D%20%5Ctimes%2012%29%20%5Crceil)
 
 ---
 
