@@ -158,9 +158,9 @@
 
         <hr>
 
-        <div id="tippingPointAnalysis" class="results-section" style="display: none;">
+        <div id="sweetSpotAnalysis" class="results-section" style="display: none;">
             <h2>Sweet Spot and Danger Zone Analysis</h2>
-            <p id="tippingPointResult"></p>
+            <p id="sweetSpotResult"></p>
         </div>
 
         <hr>
@@ -176,7 +176,7 @@
             const PURCHASE_FEE_USD = 0.6;
             const CLAIM_FEE_USD = 0.6;
             const BD_SALARY_YEARLY = 2000 * 12;
-
+            
             const baseProjects = parseFloat(document.getElementById('baseProjects').value);
             const bdCount = parseFloat(document.getElementById('bdCount').value);
             const bdKpi = parseFloat(document.getElementById('bdKpi').value);
@@ -190,7 +190,8 @@
             const changePct = parseFloat(document.getElementById('changePct').value);
             const changeFactor = 1 + (changePct / 100);
             
-            const baseTotalProjects = Math.min(baseProjects + (bdCount * bdKpi * 12), marketCap);
+            const bdProjectsFromTeam = bdCount * bdKpi * 12;
+            const baseTotalProjects = Math.min(baseProjects + bdProjectsFromTeam, marketCap);
             const baseAvgContribution = baseFundsRaised / baseUsers;
 
             function calculateProfit(totalProjects, users, fundsRaised) {
@@ -233,7 +234,7 @@
                         newFundsRaised = newUsers * baseAvgContribution;
                         break;
                     case 'avgContribution':
-                        newFundsRaised = (baseFundsRaised / baseUsers) * changeFactor * baseUsers;
+                        newFundsRaised = baseAvgContribution * changeFactor * baseUsers;
                         break;
                 }
                 const newProfit = calculateProfit(newProjects, newUsers, newFundsRaised);
@@ -284,13 +285,12 @@
             }
             document.getElementById('results').style.display = 'block';
 
-            tippingPointAnalysis(baseProjects, bdCount, bdKpi, fixedCost, baseTotalProjects);
-            kpiCalculator(baseUsers, purchasesPerUser, claimsPerUser, baseFundsRaised, baseFeePct, baseProjects, fixedCost, bdKpi);
-            zeroGrowthExpansionCalculator(baseProjects, bdKpi, fixedCost, baseUsers, purchasesPerUser, claimsPerUser, baseFundsRaised, baseFeePct);
+            sweetSpotAnalysis(baseProjects, bdCount, bdKpi, fixedCost, baseTotalProjects);
+            zeroGrowthExpansionCalculator(baseProjects, bdKpi, fixedCost, baseUsers, purchasesPerUser, claimsPerUser, baseFundsRaised, baseFeePct, marketCap);
         }
 
-        function tippingPointAnalysis(baseProjects, bdCount, bdKpi, fixedCost, baseTotalProjects) {
-            const tippingPointResultElement = document.getElementById('tippingPointResult');
+        function sweetSpotAnalysis(baseProjects, bdCount, bdKpi, fixedCost, baseTotalProjects) {
+            const sweetSpotResultElement = document.getElementById('sweetSpotResult');
             let text = "";
             const BD_SALARY_YEARLY = 2000 * 12;
 
@@ -309,69 +309,51 @@
                 <p>Your business enters a "danger zone" if you exceed ${sweetSpotProjects} projects but fail to reach the next threshold of ${nextThresholdProjects} projects, as the new BD's salary may not be covered by the new revenue.</p>
             `;
 
-            tippingPointResultElement.innerHTML = text;
-            document.getElementById('tippingPointAnalysis').style.display = 'block';
+            sweetSpotResultElement.innerHTML = text;
+            document.getElementById('sweetSpotAnalysis').style.display = 'block';
         }
 
-        function kpiCalculator(baseUsers, purchasesPerUser, claimsPerUser, baseFundsRaised, baseFeePct) {
+        function zeroGrowthExpansionCalculator(baseProjects, bdKpi, fixedCost, baseUsers, purchasesPerUser, claimsPerUser, baseFundsRaised, baseFeePct, marketCap) {
+            const zeroGrowthResultElement = document.getElementById('zeroGrowthResult');
+            const BD_SALARY_YEARLY = 2000 * 12;
             const PURCHASE_FEE_USD = 0.6;
             const CLAIM_FEE_USD = 0.6;
-            const BD_SALARY_YEARLY = 2000 * 12;
-            const kpiCalculationResult = document.getElementById('kpiCalculationResult');
-            let text = "";
 
             const revenuePerProject = (baseFundsRaised * (baseFeePct / 100)) + (baseUsers * purchasesPerUser * PURCHASE_FEE_USD) + (baseUsers * claimsPerUser * CLAIM_FEE_USD);
             
-            const projectsPerBDPerYear = BD_SALARY_YEARLY / revenuePerProject;
-            const projectsPerBDPerMonth = projectsPerBDPerYear / 12;
-
-            text = `<p>To ensure that hiring a new BD does not result in a negative profit growth, each BD needs to bring in an average of at least <strong>${projectsPerBDPerMonth.toFixed(2)}</strong> projects per month.</p>
-            <p>This is the minimum KPI to avoid the "danger zone."</p>`;
-            kpiCalculationResult.innerHTML = text;
-            document.getElementById('kpiCalculator').style.display = 'block';
-        }
-
-        function zeroGrowthExpansionCalculator(baseProjects, bdKpi, fixedCost, baseUsers, purchasesPerUser, claimsPerUser, baseFundsRaised, baseFeePct) {
-            const zeroGrowthResultElement = document.getElementById('zeroGrowthResult');
-            const BD_SALARY_YEARLY = 2000 * 12;
             let bdCount = 0;
-            let lastProfit = -Infinity;
-            let currentProfit = 0;
             let tippingPointReached = false;
-            let tippingPointBDCount = 0;
             
-            const marketCap = parseFloat(document.getElementById('marketCap').value);
-            const totalRevenuePerProject = (baseFundsRaised * (baseFeePct / 100)) + (baseUsers * purchasesPerUser * PURCHASE_FEE_USD) + (baseUsers * claimsPerUser * CLAIM_FEE_USD);
-            
-            while (!tippingPointReached && (baseProjects + (bdCount * bdKpi * 12)) <= marketCap) {
-                const totalProjects = baseProjects + (bdCount * bdKpi * 12);
-                const totalRevenue = totalProjects * totalRevenuePerProject;
-                const totalCost = fixedCost + (bdCount * BD_SALARY_YEARLY);
-                currentProfit = totalRevenue - totalCost;
-                
-                if (bdCount > 0 && currentProfit - lastProfit < 0) {
-                    tippingPointReached = true;
-                    tippingPointBDCount = bdCount - 1;
-                } else if ((baseProjects + ((bdCount + 1) * bdKpi * 12)) > marketCap) {
-                    tippingPointBDCount = bdCount;
-                    tippingPointReached = true;
-                }
-                
-                lastProfit = currentProfit;
-                bdCount++;
+            while (!tippingPointReached && (baseProjects + ((bdCount + 1) * bdKpi * 12)) <= marketCap && bdKpi > 0) {
+                 const currentProjects = baseProjects + (bdCount * bdKpi * 12);
+                 const nextProjects = baseProjects + ((bdCount + 1) * bdKpi * 12);
+                 const currentRevenue = currentProjects * revenuePerProject;
+                 const nextRevenue = nextProjects * revenuePerProject;
+                 
+                 const currentCost = fixedCost + (bdCount * BD_SALARY_YEARLY);
+                 const nextCost = fixedCost + ((bdCount + 1) * BD_SALARY_YEARLY);
+                 
+                 const marginalProfit = (nextRevenue - nextCost) - (currentRevenue - currentCost);
+
+                 if (marginalProfit < 0) {
+                     tippingPointReached = true;
+                     bdCount++;
+                 } else {
+                     bdCount++;
+                 }
             }
+
+            let text = "";
             
-            let text = `
-                <p>The optimal number of BDs to hire before the "zero-growth expansion" point is reached is **${tippingPointBDCount}**.</p>
-                <p>Hiring beyond this number will result in a decrease in marginal net profit, as the cost of a new BD outweighs the revenue they bring in.</p>
-            `;
-            
-            if (tippingPointBDCount == 0 && currentProfit > 0) {
-                 text = `<p>Even with no BDs, the baseline projects are profitable enough to cover costs. You can safely hire at least one BD without risking a negative marginal profit.</p>`;
-            } else if (tippingPointBDCount == 0 && currentProfit < 0) {
-                 text = `<p>The current baseline projects are not profitable. You would need to achieve a higher project count to reach the zero-growth expansion point.</p>`;
+            if (bdCount === 0 && (baseProjects * revenuePerProject - fixedCost) > 0) {
+                 text = `<p>The baseline projects are already profitable enough to cover all fixed costs. You can safely hire at least one BD to start expanding.</p>`;
+            } else if (bdCount === 0 && (baseProjects * revenuePerProject - fixedCost) < 0) {
+                 text = `<p>The baseline projects are not profitable. The current BD KPI of **${bdKpi}** is too low to justify even one hire, and you would need a more aggressive KPI or more attractive market conditions.</p>`;
+            } else {
+                 text = `<p>Based on a BD monthly KPI of **${bdKpi}** and a market cap of **${marketCap}** projects, the optimal number of BDs to hire is **${bdCount}**.</p>
+                 <p>Hiring beyond this number will cause a decrease in marginal net profit.</p>`;
             }
-            
+
             zeroGrowthResultElement.innerHTML = text;
             document.getElementById('zeroGrowthExpansion').style.display = 'block';
         }
