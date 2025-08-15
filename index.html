@@ -154,7 +154,7 @@
         <hr>
 
         <div id="tippingPointAnalysis" class="results-section" style="display: none;">
-            <h2>Tipping Point Analysis</h2>
+            <h2>Sweet Spot and Danger Zone Analysis</h2>
             <p id="tippingPointResult"></p>
         </div>
     </div>
@@ -215,7 +215,7 @@
                 switch (scenario.id) {
                     case 'projects':
                         newProjects = baseTotalProjects * changeFactor;
-                        newFundsRaised = newProjects * baseAvgContribution;
+                        newFundsRaised = (newProjects - baseProjects) * baseAvgContribution; // Fix: use new projects to calculate new funds raised
                         break;
                     case 'users':
                         newUsers = baseUsers * changeFactor;
@@ -226,7 +226,6 @@
                         newFundsRaised = newAvgContribution * baseUsers;
                         break;
                 }
-
                 const newProfit = calculateProfit(newProjects, newUsers, newFundsRaised);
                 const profitGrowth = ((newProfit - baseProfit) / baseProfit) * 100;
 
@@ -275,7 +274,6 @@
             }
             document.getElementById('results').style.display = 'block';
 
-            // Tipping Point Analysis
             tippingPointAnalysis(baseProjects, bdCount, bdKpi, fixedCost);
         }
 
