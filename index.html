@@ -278,51 +278,65 @@
             }
             document.getElementById('results').style.display = 'block';
 
-            zeroGrowthExpansionCalculator(baseProjects, bdKpi, fixedCost, baseUsers, purchasesPerUser, claimsPerUser, baseFundsRaised, baseFeePct, marketCap);
+            zeroGrowthExpansionCalculator(baseProjects, bdCount, bdKpi, fixedCost, baseUsers, purchasesPerUser, claimsPerUser, baseFundsRaised, baseFeePct, marketCap);
         }
 
-        function zeroGrowthExpansionCalculator(baseProjects, bdKpi, fixedCost, baseUsers, purchasesPerUser, claimsPerUser, baseFundsRaised, baseFeePct, marketCap) {
+        function calculateProfit(totalProjects, users, fundsRaised) {
+            const PURCHASE_FEE_USD = 0.6;
+            const CLAIM_FEE_USD = 0.6;
+            const BD_SALARY_YEARLY = 2000 * 12;
+
+            const baseProjects = parseFloat(document.getElementById('baseProjects').value);
+            const bdKpi = parseFloat(document.getElementById('bdKpi').value);
+            const fixedCost = parseFloat(document.getElementById('fixedCost').value);
+            const baseFeePct = parseFloat(document.getElementById('baseFeePct').value);
+            const purchasesPerUser = parseFloat(document.getElementById('purchasesPerUser').value);
+            const claimsPerUser = parseFloat(document.getElementById('claimsPerUser').value);
+
+            const platformRevenue = (totalProjects * fundsRaised * (baseFeePct / 100));
+            const purchaseFeeRevenue = (totalProjects * users * purchasesPerUser * PURCHASE_FEE_USD);
+            const claimFeeRevenue = (totalProjects * users * claimsPerUser * CLAIM_FEE_USD);
+            const totalRevenue = platformRevenue + purchaseFeeRevenue + claimFeeRevenue;
+            
+            const bdProjects = totalProjects - baseProjects;
+            const bdCountNeeded = bdProjects > 0 ? Math.ceil(bdProjects / (bdKpi * 12)) : 0;
+            const bdCost = bdCountNeeded * BD_SALARY_YEARLY;
+            const totalCost = fixedCost + bdCost;
+
+            return totalRevenue - totalCost;
+        }
+
+        function zeroGrowthExpansionCalculator(baseProjects, bdCount, bdKpi, fixedCost, baseUsers, purchasesPerUser, claimsPerUser, baseFundsRaised, baseFeePct, marketCap) {
             const zeroGrowthResultElement = document.getElementById('zeroGrowthResult');
             const BD_SALARY_YEARLY = 2000 * 12;
             const PURCHASE_FEE_USD = 0.6;
             const CLAIM_FEE_USD = 0.6;
-            let bdCount = 0;
-            let lastProfit = -Infinity;
-            let currentProfit = 0;
-            let tippingPointReached = false;
-            let tippingPointBDCount = 0;
-            
-            const totalRevenuePerProject = (baseFundsRaised * (baseFeePct / 100)) + (baseUsers * purchasesPerUser * PURCHASE_FEE_USD) + (baseUsers * claimsPerUser * CLAIM_FEE_USD);
-            
-            while (!tippingPointReached && (baseProjects + ((bdCount + 1) * bdKpi * 12)) <= marketCap && bdKpi > 0) {
-                 const totalProjects = baseProjects + (bdCount * bdKpi * 12);
-                 const totalRevenue = totalProjects * totalRevenuePerProject;
-                 const totalCost = fixedCost + (bdCount * BD_SALARY_YEARLY);
-                 currentProfit = totalRevenue - totalCost;
-                 
-                 if (bdCount > 0 && currentProfit - lastProfit < 0) {
-                     tippingPointReached = true;
-                     tippingPointBDCount = bdCount - 1;
-                 } else if ((baseProjects + ((bdCount + 1) * bdKpi * 12)) > marketCap) {
-                     tippingPointBDCount = bdCount;
-                     tippingPointReached = true;
-                 }
-                 
-                 lastProfit = currentProfit;
-                 bdCount++;
-            }
 
+            const currentProjects = Math.min(baseProjects + (bdCount * bdKpi * 12), marketCap);
+            const currentRevenue = currentProjects * ((baseFundsRaised * (baseFeePct / 100)) + (baseUsers * purchasesPerUser * PURCHASE_FEE_USD) + (baseUsers * claimsPerUser * CLAIM_FEE_USD));
+            const currentBDsNeeded = bdCount > 0 ? bdCount : 0;
+            const currentCost = fixedCost + (currentBDsNeeded * BD_SALARY_YEARLY);
+            const currentProfit = currentRevenue - currentCost;
+
+            const nextBDCount = bdCount + 1;
+            const nextProjects = Math.min(baseProjects + (nextBDCount * bdKpi * 12), marketCap);
+            const nextRevenue = nextProjects * ((baseFundsRaised * (baseFeePct / 100)) + (baseUsers * purchasesPerUser * PURCHASE_FEE_USD) + (baseUsers * claimsPerUser * CLAIM_FEE_USD));
+            const nextBDsNeeded = nextBDCount;
+            const nextCost = fixedCost + (nextBDsNeeded * BD_SALARY_YEARLY);
+            const nextProfit = nextRevenue - nextCost;
+
+            let marginalProfit = nextProfit - currentProfit;
+            
             let text = "";
             
-            if (tippingPointBDCount === 0 && (baseProjects * totalRevenuePerProject - fixedCost) > 0) {
-                 text = `<p>The baseline projects are already profitable enough to cover all fixed costs. You can safely hire at least one BD to start expanding.</p>`;
-            } else if (tippingPointBDCount === 0 && (baseProjects * totalRevenuePerProject - fixedCost) <= 0) {
-                 text = `<p>The baseline projects are not profitable. The current BD KPI of **${bdKpi}** is too low to justify even one hire, and you would need a more aggressive KPI or more attractive market conditions.</p>`;
+            if (marginalProfit > 0) {
+                 text = `<p>The marginal profit of hiring your next BD (the <strong>${nextBDCount}</strong>-th BD) is <strong>$${marginalProfit.toLocaleString()}</strong>.</p>
+                 <p>Given the current KPI of **${bdKpi}** and a market cap of **${marketCap}** projects, it is profitable to expand your team. You can continue to hire BDs until the marginal profit becomes negative.</p>`;
             } else {
-                 text = `<p>Based on a BD monthly KPI of **${bdKpi}** and a market cap of **${marketCap}** projects, the optimal number of BDs to hire is **${tippingPointBDCount}**.</p>
-                 <p>Hiring beyond this number will cause a decrease in marginal net profit.</p>`;
+                 text = `<p>The marginal profit of hiring your next BD (the <strong>${nextBDCount}</strong>-th BD) is negative or zero.</p>
+                 <p>Based on your current BD KPI of **${bdKpi}** and a market cap of **${marketCap}** projects, hiring another BD is not a profitable decision. Your team has reached the zero-growth expansion point.</p>`;
             }
-            
+
             zeroGrowthResultElement.innerHTML = text;
             document.getElementById('zeroGrowthExpansion').style.display = 'block';
         }
