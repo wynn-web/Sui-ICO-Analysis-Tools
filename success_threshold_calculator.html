@@ -75,7 +75,7 @@
 
     <div class="container">
         <h1>Success Threshold Calculator</h1>
-        <p>Input your target profit and baseline data to find the business metrics needed for success.</p>
+        <p>Calculate the specific business metrics needed to hit a target profit or break-even.</p>
 
         <h2>Target and Baseline Data</h2>
         <div class="input-group">
@@ -83,15 +83,27 @@
             <input type="number" id="targetProfit" value="20000" min="0">
         </div>
         <div class="input-group">
-            <label for="baseProjects">Number of Projects (Baseline)</label>
-            <input type="number" id="baseProjects" value="15" min="0">
+            <label for="baseProjects">Baseline Projects</label>
+            <input type="number" id="baseProjects" value="5" min="0">
         </div>
         <div class="input-group">
-            <label for="baseUsers">Number of Users per Project (Baseline)</label>
+            <label for="bdKpi">BD Monthly Project KPI</label>
+            <input type="number" id="bdKpi" value="3" min="1">
+        </div>
+        <div class="input-group">
+            <label for="baseUsers">Number of Users per Project</label>
             <input type="number" id="baseUsers" value="300" min="0">
         </div>
         <div class="input-group">
-            <label for="baseFundsRaised">Funds Raised per Project (Baseline) (USDT)</label>
+            <label for="purchasesPerUser">Purchases per User</label>
+            <input type="number" id="purchasesPerUser" value="2" min="1">
+        </div>
+        <div class="input-group">
+            <label for="claimsPerUser">Claims per User</label>
+            <input type="number" id="claimsPerUser" value="5" min="1">
+        </div>
+        <div class="input-group">
+            <label for="baseFundsRaised">Funds Raised per Project (USDT)</label>
             <input type="number" id="baseFundsRaised" value="20000" min="0">
         </div>
         <div class="input-group">
@@ -99,59 +111,101 @@
             <input type="number" id="baseFeePct" value="3" min="0" max="100">
         </div>
         <div class="input-group">
-            <label for="baseServiceFee">Service Fee (per purchase, USD)</label>
-            <input type="number" id="baseServiceFee" value="0.5" min="0" step="0.1">
+            <label for="fixedCost">Fixed Cost (R&D, etc.) (USD)</label>
+            <input type="number" id="fixedCost" value="10000" min="0">
         </div>
         <div class="input-group">
-            <label for="baseCost">Total Annual Cost (USD)</label>
-            <input type="number" id="baseCost" value="10000" min="0">
+            <label for="marketCap">Total Project Market Cap</label>
+            <input type="number" id="marketCap" value="50" min="0">
         </div>
 
         <button class="btn" onclick="calculateThreshold()">Calculate Thresholds</button>
 
         <div id="results" class="results-section" style="display: none;">
             <h2>Calculated Thresholds</h2>
-            <p id="projectsThreshold"></p>
-            <p id="usersThreshold"></p>
-            <p id="fundsRaisedThreshold"></p>
+            <p id="breakEvenProjects"></p>
+            <p id="targetProjectsThreshold"></p>
+            <p id="targetUsersThreshold"></p>
+            <p id="targetFundsRaisedThreshold"></p>
         </div>
     </div>
 
     <script>
         function calculateThreshold() {
-            // Get user inputs
+            const PURCHASE_FEE_USD = 0.6;
+            const CLAIM_FEE_USD = 0.6;
+            const BD_SALARY_YEARLY = 2000 * 12;
+            
             const targetProfit = parseFloat(document.getElementById('targetProfit').value);
             const baseProjects = parseFloat(document.getElementById('baseProjects').value);
+            const bdKpi = parseFloat(document.getElementById('bdKpi').value);
             const baseUsers = parseFloat(document.getElementById('baseUsers').value);
+            const purchasesPerUser = parseFloat(document.getElementById('purchasesPerUser').value);
+            const claimsPerUser = parseFloat(document.getElementById('claimsPerUser').value);
             const baseFundsRaised = parseFloat(document.getElementById('baseFundsRaised').value);
             const baseFeePct = parseFloat(document.getElementById('baseFeePct').value);
-            const baseServiceFee = parseFloat(document.getElementById('baseServiceFee').value);
-            const baseCost = parseFloat(document.getElementById('baseCost').value);
+            const fixedCost = parseFloat(document.getElementById('fixedCost').value);
+            const marketCap = parseFloat(document.getElementById('marketCap').value);
+            
+            const bdProjectsPerYear = bdKpi * 12;
+            const totalRevenuePerProject = (baseFundsRaised * (baseFeePct / 100)) + (baseUsers * purchasesPerUser * PURCHASE_FEE_USD) + (baseUsers * claimsPerUser * CLAIM_FEE_USD);
 
-            // Calculate Avg. Contribution per User for baseline
-            const baseAvgContribution = baseFundsRaised / baseUsers;
+            // --- Break-even Point Calculation ---
+            let breakEvenProjects = "Not possible within the market cap.";
+            let currentProjects = baseProjects;
+            let found = false;
 
-            // Calculate the total revenue required to hit the target profit
-            const targetRevenue = targetProfit + baseCost;
+            while (!found && currentProjects <= marketCap) {
+                const bdProjects = currentProjects - baseProjects;
+                const bdCountNeeded = bdProjects > 0 ? Math.ceil(bdProjects / bdProjectsPerYear) : 0;
+                const totalCost = fixedCost + (bdCountNeeded * BD_SALARY_YEARLY);
+                const totalRevenue = currentProjects * totalRevenuePerProject;
 
-            // --- Scenario 1: Calculate Projects Threshold ---
-            // Formula: Projects = (Target Revenue) / [(Funds Raised * Platform Fee%) + (Users * Service Fee)]
-            const projectRevenuePerProject = (baseFundsRaised * (baseFeePct / 100)) + (baseUsers * baseServiceFee);
-            const projectsNeeded = targetRevenue / projectRevenuePerProject;
+                if (totalRevenue >= totalCost) {
+                    breakEvenProjects = currentProjects;
+                    found = true;
+                } else {
+                    currentProjects++;
+                }
+            }
 
-            // --- Scenario 2: Calculate Users Threshold ---
-            // Formula: Users = (Target Revenue) / [(Projects * Avg. Contribution * Platform Fee%) + (Projects * Service Fee)]
-            const userRevenuePerUser = (baseProjects * baseAvgContribution * (baseFeePct / 100)) + (baseProjects * baseServiceFee);
-            const usersNeeded = targetRevenue / userRevenuePerUser;
+            // --- Target Profit Thresholds Calculation ---
+            const targetRevenue = targetProfit + fixedCost;
+            
+            // Target Projects
+            const targetProjects = targetProfit > 0 ? (targetRevenue + (Math.ceil((baseProjects + (bdKpi * 12)) * (targetProfit/baseProjects)) / bdProjectsPerYear * BD_SALARY_YEARLY)) / totalRevenuePerProject : 'Not applicable';
 
-            // --- Scenario 3: Calculate Funds Raised Threshold ---
-            // Formula: Funds Raised = (Target Revenue - (Projects * Users * Service Fee)) / (Projects * Platform Fee%)
-            const fundsRaisedNeeded = (targetRevenue - (baseProjects * baseUsers * baseServiceFee)) / (baseProjects * (baseFeePct / 100));
+            // Simplified Target Projects Calculation
+            let targetProjectsSimplified = 0;
+            let currentProjectsTarget = baseProjects;
+            let foundTarget = false;
 
+            while(!foundTarget && currentProjectsTarget <= marketCap){
+                const bdProjects = currentProjectsTarget - baseProjects;
+                const bdCountNeeded = bdProjects > 0 ? Math.ceil(bdProjects / bdProjectsPerYear) : 0;
+                const totalCost = fixedCost + (bdCountNeeded * BD_SALARY_YEARLY);
+                const totalRevenue = currentProjectsTarget * totalRevenuePerProject;
+
+                if (totalRevenue >= (targetProfit + totalCost)) {
+                    targetProjectsSimplified = currentProjectsTarget;
+                    foundTarget = true;
+                } else {
+                    currentProjectsTarget++;
+                }
+            }
+            if (!foundTarget) {
+                 targetProjectsSimplified = "Not possible within the market cap.";
+            }
+
+            // Target Users and Funds Raised (assuming fixed projects)
+            const targetFundsRaised = targetRevenue / baseProjects;
+            const targetUsers = targetFundsRaised / (baseFundsRaised / baseUsers);
+            
             // Display results
-            document.getElementById('projectsThreshold').innerHTML = `To achieve a **$${targetProfit.toLocaleString()}** annual net profit, you would need <span class="highlight">${Math.ceil(projectsNeeded)}</span> projects, assuming all other metrics remain constant.`;
-            document.getElementById('usersThreshold').innerHTML = `To achieve a **$${targetProfit.toLocaleString()}** annual net profit, you would need <span class="highlight">${Math.ceil(usersNeeded)}</span> users per project, assuming all other metrics remain constant.`;
-            document.getElementById('fundsRaisedThreshold').innerHTML = `To achieve a **$${targetProfit.toLocaleString()}** annual net profit, you would need a **Funds Raised per Project** of <span class="highlight">$${fundsRaisedNeeded.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>, assuming all other metrics remain constant.`;
+            document.getElementById('breakEvenProjects').innerHTML = `The business's break-even point is at **${breakEvenProjects}** projects.`;
+            document.getElementById('targetProjectsThreshold').innerHTML = `To achieve a **$${targetProfit.toLocaleString()}** annual net profit, you would need <span class="highlight">${targetProjectsSimplified}</span> projects.`;
+            document.getElementById('targetUsersThreshold').innerHTML = `To achieve a **$${targetProfit.toLocaleString()}** annual net profit, you would need <span class="highlight">${Math.ceil(targetUsers)}</span> users per project.`;
+            document.getElementById('targetFundsRaisedThreshold').innerHTML = `To achieve a **$${targetProfit.toLocaleString()}** annual net profit, you would need a **Funds Raised per Project** of <span class="highlight">$${targetFundsRaised.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>.`;
             document.getElementById('results').style.display = 'block';
         }
     </script>
