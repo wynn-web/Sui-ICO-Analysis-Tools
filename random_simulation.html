@@ -191,6 +191,17 @@
                 </div>
             </div>
             <div>
+                <h3>Total Project Market Cap</h3>
+                <div class="input-group">
+                    <label for="marketCapMin">Min:</label>
+                    <input type="number" id="marketCapMin" value="50">
+                </div>
+                <div class="input-group">
+                    <label for="marketCapMax">Max:</label>
+                    <input type="number" id="marketCapMax" value="100">
+                </div>
+            </div>
+            <div>
                 <h3>Simulation Settings</h3>
                 <div class="input-group">
                     <label for="numSimulations">Number of Simulations:</label>
@@ -207,8 +218,9 @@
             <p><strong>Total Projects</strong> was the more profitable strategy in: <span id="projectsCount" class="highlight">0</span> scenarios.</p>
             <p><strong>Users per Project</strong> was the more profitable strategy in: <span id="usersCount" class="highlight">0</span> scenarios.</p>
             <p><strong>Avg. Contribution per User</strong> was the more profitable strategy in: <span id="avgContributionCount" class="highlight">0</span> scenarios.</p>
-            <p>They were of equal importance in: <span id="equalCount">0</span> scenarios.</p>
+            <p>They were of equal importance in: <span id="equalCount" class="highlight">0</span> scenarios.</p>
             <h3 id="finalConclusion"></h3>
+            <p id="insightSummary"></p>
         </div>
     </div>
 
@@ -237,6 +249,8 @@
             const platformFeeMax = parseFloat(document.getElementById('platformFeeMax').value);
             const fixedCostMin = parseFloat(document.getElementById('fixedCostMin').value);
             const fixedCostMax = parseFloat(document.getElementById('fixedCostMax').value);
+            const marketCapMin = parseFloat(document.getElementById('marketCapMin').value);
+            const marketCapMax = parseFloat(document.getElementById('marketCapMax').value);
             const changeFactor = 1.2;
 
             let projectsWinCount = 0;
@@ -251,6 +265,7 @@
             const avgContributionCountElement = document.getElementById('avgContributionCount');
             const equalCountElement = document.getElementById('equalCount');
             const finalConclusionElement = document.getElementById('finalConclusion');
+            const insightSummaryElement = document.getElementById('insightSummary');
 
             resultsElement.style.display = 'block';
             totalSimulationsElement.textContent = `Running ${numSimulations.toLocaleString()} simulations...`;
@@ -265,8 +280,10 @@
                 const fundsRaised = getRandom(fundsRaisedMin, fundsRaisedMax);
                 const platformFeePct = getRandom(platformFeeMin, platformFeeMax);
                 const fixedCost = getRandom(fixedCostMin, fixedCostMax);
+                const marketCap = getRandom(marketCapMin, marketCapMax);
 
-                const totalProjects = baseProjects + (bdCount * bdKpi * 12);
+                const bdProjectsFromTeam = bdCount * bdKpi * 12;
+                const totalProjects = Math.min(baseProjects + bdProjectsFromTeam, marketCap);
                 const avgContribution = fundsRaised / users;
 
                 const baseProfit = calculateProfit(totalProjects, users, fundsRaised, bdKpi, fixedCost, platformFeePct, purchasesPerUser, claimsPerUser, baseProjects);
@@ -275,7 +292,7 @@
                     continue;
                 }
 
-                const newProjects = totalProjects * changeFactor;
+                const newProjects = Math.min(totalProjects * changeFactor, marketCap);
                 const newUsers = users * changeFactor;
                 const newFundsRaisedFromUsers = newUsers * avgContribution;
                 const newAvgContribution = avgContribution * changeFactor;
@@ -323,21 +340,27 @@
             avgContributionCountElement.textContent = avgContributionCount.toLocaleString();
             equalCountElement.textContent = equalCount.toLocaleString();
 
-            const total = projectsWinCount + usersWinCount + avgContributionWinCount + equalCount;
+            const total = projectsWinCount + usersWinCount + avgContributionCount + equalCount;
             let conclusionText = "";
+            let insightText = "";
 
-            if (projectsWinCount > total * 0.4) {
+            if (projectsWinCount / total > 0.4) {
                  conclusionText = "Conclusion: Based on a wide range of scenarios, focusing on **Total Projects** is generally the more profitable strategy.";
-            } else if (usersWinCount > total * 0.4) {
+                 insightText = "This result is likely due to the BD team's efficiency (high KPI) and a large market cap, making each new project a significant revenue driver that easily covers the stepped costs.";
+            } else if (usersWinCount / total > 0.4) {
                  conclusionText = "Conclusion: Based on a wide range of scenarios, focusing on **Users per Project** is generally the more profitable strategy.";
-            } else if (avgContributionWinCount > total * 0.4) {
+                 insightText = "This result suggests that fixed user fees (purchase and claim) are the dominant revenue streams, making a larger user base per project the key to profitability.";
+            } else if (avgContributionCount / total > 0.4) {
                  conclusionText = "Conclusion: Based on a wide range of scenarios, focusing on **Avg. Contribution per User** is generally the more profitable strategy.";
+                 insightText = "This result indicates that the platform's percentage fee on funds raised is the most significant revenue driver, making higher user contributions the most effective lever.";
             } else {
                  conclusionText = "Conclusion: The optimal strategy depends heavily on specific market conditions. All three variables have a significant impact.";
+                 insightText = "This suggests a well-balanced business model. You should carefully analyze current market conditions and choose the strategy that is easiest and most cost-effective to implement.";
             }
 
             finalConclusionElement.textContent = conclusionText;
             finalConclusionElement.classList.add('highlight');
+            insightSummaryElement.textContent = insightText;
         }
 
         function calculateProfit(totalProjects, users, fundsRaised, bdKpi, fixedCost, platformFeePct, purchasesPerUser, claimsPerUser, baseProjects) {
@@ -349,6 +372,7 @@
             const purchaseFeeRevenue = (totalProjects * users * purchasesPerUser * PURCHASE_FEE_USD);
             const claimFeeRevenue = (totalProjects * users * claimsPerUser * CLAIM_FEE_USD);
             const totalRevenue = platformRevenue + purchaseFeeRevenue + claimFeeRevenue;
+            
             const bdProjects = totalProjects - baseProjects;
             const bdCountNeeded = bdProjects > 0 ? Math.ceil(bdProjects / (bdKpi * 12)) : 0;
             const bdCost = bdCountNeeded * BD_SALARY_YEARLY;
