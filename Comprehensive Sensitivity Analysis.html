@@ -98,21 +98,21 @@
         <h2>Baseline Scenario Data</h2>
         <div class="input-group">
             <label for="baseProjects">Baseline Projects</label>
-            <input type="number" id="baseProjects" value="10" min="0">
+            <input type="number" id="baseProjects" value="5" min="0">
             <small>Natural projects, independent of BD effort.</small>
         </div>
         <div class="input-group">
             <label for="bdCount">Number of BDs</label>
-            <input type="number" id="bdCount" value="2" min="0">
+            <input type="number" id="bdCount" value="1" min="0">
         </div>
         <div class="input-group">
             <label for="bdKpi">BD Monthly Project KPI</label>
-            <input type="number" id="bdKpi" value="3" min="1">
+            <input type="number" id="bdKpi" value="2.5" min="1" step="0.1">
             <small>Projects each BD must bring in per month.</small>
         </div>
         <div class="input-group">
             <label for="baseUsers">Number of Users per Project</label>
-            <input type="number" id="baseUsers" value="300" min="0">
+            <input type="number" id="baseUsers" value="200" min="0">
         </div>
         <div class="input-group">
             <label for="purchasesPerUser">Purchases per User</label>
@@ -120,7 +120,7 @@
         </div>
         <div class="input-group">
             <label for="claimsPerUser">Claims per User</label>
-            <input type="number" id="claimsPerUser" value="5" min="1">
+            <input type="number" id="claimsPerUser" value="3" min="1">
         </div>
         <div class="input-group">
             <label for="baseFundsRaised">Funds Raised per Project (USDT)</label>
@@ -128,15 +128,15 @@
         </div>
         <div class="input-group">
             <label for="baseFeePct">Platform Fee (%)</label>
-            <input type="number" id="baseFeePct" value="3" min="0" max="100">
+            <input type="number" id="baseFeePct" value="4" min="0" max="100">
         </div>
         <div class="input-group">
             <label for="fixedCost">Fixed Cost (R&D, etc.) (USD)</label>
-            <input type="number" id="fixedCost" value="10000" min="0">
+            <input type="number" id="fixedCost" value="15000" min="0">
         </div>
         <div class="input-group">
             <label for="marketCap">Total Project Market Cap</label>
-            <input type="number" id="marketCap" value="80" min="0">
+            <input type="number" id="marketCap" value="35" min="0">
             <small>Maximum number of projects available in the market.</small>
         </div>
 
@@ -330,7 +330,7 @@
             let text = "";
             
             if (marginalProfit > 0) {
-                 text = `<p>The marginal profit of hiring your next BD (the <strong>${nextBDCount}</strong>-th BD) is <strong>$${marginalProfit.toLocaleString()}</strong>.</p>
+                 text = `<p>The marginal profit of hiring your next BD (the <strong>${nextBDCount}</strong>-th BD) is <strong>$${marginalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>.</p>
                  <p>Given the current KPI of **${bdKpi}** and a market cap of **${marketCap}** projects, it is profitable to expand your team. You can continue to hire BDs until the marginal profit becomes negative.</p>`;
             } else {
                  text = `<p>The marginal profit of hiring your next BD (the <strong>${nextBDCount}</strong>-th BD) is negative or zero.</p>
