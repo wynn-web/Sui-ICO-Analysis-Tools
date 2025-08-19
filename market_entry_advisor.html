@@ -113,15 +113,15 @@
         </div>
         <div class="input-group">
             <label for="bdCount">Number of BDs</label>
-            <input type="number" id="bdCount" value="2" min="0">
+            <input type="number" id="bdCount" value="1" min="0">
         </div>
         <div class="input-group">
             <label for="bdKpi">BD Monthly Project KPI</label>
-            <input type="number" id="bdKpi" value="3" min="1">
+            <input type="number" id="bdKpi" value="2.5" min="1" step="0.1">
         </div>
         <div class="input-group">
             <label for="baseUsers">Number of Users per Project</label>
-            <input type="number" id="baseUsers" value="300" min="0">
+            <input type="number" id="baseUsers" value="200" min="0">
         </div>
         <div class="input-group">
             <label for="purchasesPerUser">Purchases per User</label>
@@ -129,7 +129,7 @@
         </div>
         <div class="input-group">
             <label for="claimsPerUser">Claims per User</label>
-            <input type="number" id="claimsPerUser" value="5" min="1">
+            <input type="number" id="claimsPerUser" value="3" min="1">
         </div>
         <div class="input-group">
             <label for="baseFundsRaised">Funds Raised per Project (USDT)</label>
@@ -137,15 +137,15 @@
         </div>
         <div class="input-group">
             <label for="baseFeePct">Platform Fee (%)</label>
-            <input type="number" id="baseFeePct" value="3" min="0" max="100">
+            <input type="number" id="baseFeePct" value="5" min="0" max="100">
         </div>
         <div class="input-group">
             <label for="fixedCost">Fixed Cost (R&D, etc.) (USD)</label>
-            <input type="number" id="fixedCost" value="10000" min="0">
+            <input type="number" id="fixedCost" value="15000" min="0">
         </div>
         <div class="input-group">
             <label for="marketCap">Total Project Market Cap</label>
-            <input type="number" id="marketCap" value="50" min="0">
+            <input type="number" id="marketCap" value="35" min="0">
         </div>
 
         <hr>
@@ -153,12 +153,12 @@
         <h2>DCF Model Parameters</h2>
         <div class="input-group">
             <label for="discountRate">Discount Rate (%)</label>
-            <input type="number" id="discountRate" value="25" min="0" step="0.1">
+            <input type="number" id="discountRate" value="30" min="0" step="0.1">
             <small>Represents the risk and opportunity cost of the project.</small>
         </div>
         <div class="input-group">
             <label for="growthRate">Annual Profit Growth Rate (%)</label>
-            <input type="number" id="growthRate" value="10" min="0" step="0.1">
+            <input type="number" id="growthRate" value="15" min="0" step="0.1">
             <small>Used for calculating future cash flows in the DCF model.</small>
         </div>
         <div class="input-group">
@@ -230,7 +230,6 @@
 
             const baseProfit = calculateProfit(baseTotalProjects, baseUsers, baseFundsRaised);
 
-            // DCF Model Calculation
             let npv = 0;
             let projects = baseTotalProjects;
             let profit = baseProfit;
@@ -245,13 +244,11 @@
                 npv += profit / Math.pow(1 + discountRate, i);
             }
 
-            // Terminal Value (after forecast period)
             if (discountRate > terminalGrowthRate) {
                 const terminalValue = (profit * (1 + terminalGrowthRate)) / (discountRate - terminalGrowthRate);
                 npv += terminalValue / Math.pow(1 + discountRate, forecastYears);
             }
 
-            // Determine the decision
             let decision = '';
             let reasons = [];
 
@@ -275,7 +272,6 @@
                 decision = 'STOP';
             }
             
-            // Display results
             const decisionBox = document.getElementById('decisionBox');
             const reasonBox = document.getElementById('reasonBox');
             
